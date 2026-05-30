@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ${ { github.workflow } }-${ { github.ref } }
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+        
+      - name: Code generation (if needed)
+        run: dart run build_runner build --delete-conflicting-outputs
+      
+      - name: Check format
+        run: dart format --set-exit-if-changed .
+      
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      
+      - name: Run tests
+        run: flutter test --coverage
+      
+      # Optional: Enforce minimum coverage
+      # - name: Check minimum coverage
+      #   uses: VeryGoodOpenSource/very_good_coverage@v3
+      #   with:
+      #     min_coverage: 80

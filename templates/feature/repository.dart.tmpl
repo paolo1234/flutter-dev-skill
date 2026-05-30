@@ -1,0 +1,27 @@
+import '../models/{{feature_name}}_model.dart';
+
+/// Repository interface for {{FeatureName}}.
+///
+/// Defines the domain contract without exposing implementation details
+/// (like API endpoints or local database).
+abstract class {{FeatureName}}Repository {
+  /// Fetches a list of [{{FeatureName}}Model].
+  ///
+  /// Throws [NetworkException] if offline.
+  /// Throws [ServerException] on API error.
+  Future<List<{{FeatureName}}Model>> fetchAll();
+
+  /// Fetches a single [{{FeatureName}}Model] by [id].
+  ///
+  /// Returns `null` if not found.
+  Future<{{FeatureName}}Model?> getById(String id);
+
+  /// Creates a new [{{FeatureName}}Model].
+  Future<{{FeatureName}}Model> create(Map<String, dynamic> data);
+
+  /// Updates an existing [{{FeatureName}}Model].
+  Future<void> update(String id, Map<String, dynamic> data);
+
+  /// Deletes a [{{FeatureName}}Model] by [id].
+  Future<void> delete(String id);
+}

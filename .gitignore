@@ -1,0 +1,16 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore the old repo backup (since we've extracted everything we need)
+flutter-dev-core-old/
+
+# Do not ignore the .forge directory in projects using this skill, 
+# but in the skill repository itself there should be no .forge directory

@@ -1,0 +1,27 @@
+default_platform(:android)
+
+platform :android do
+  desc "Deploy to Google Play Internal Track"
+  lane :deploy_internal do
+    # Note: Flutter build should be done before running this lane
+    # using: flutter build appbundle --release --dart-define-from-file=env/prod.json
+    
+    upload_to_play_store(
+      track: "internal",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"] || "fastlane/google-play-service-account.json",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
+  desc "Deploy to Google Play Production"
+  lane :deploy_production do
+    upload_to_play_store(
+      track: "production",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"] || "fastlane/google-play-service-account.json",
+    )
+  end
+end

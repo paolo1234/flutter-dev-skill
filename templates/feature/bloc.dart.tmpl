@@ -1,0 +1,97 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+import '../../domain/models/{{feature_name}}_model.dart';
+import '../../domain/repositories/{{feature_name}}_repository.dart';
+import '../../../../core/errors/app_exception.dart';
+
+part '{{feature_name}}_state.dart';
+part '{{feature_name}}_bloc.freezed.dart';
+
+// -----------------------------------------------------------------------------
+// Events (if using BLoC instead of Cubit, uncomment this and change Cubit to Bloc)
+// -----------------------------------------------------------------------------
+// @freezed
+// class {{FeatureName}}Event with _${{FeatureName}}Event {
+//   const factory {{FeatureName}}Event.loadRequested() = _LoadRequested;
+//   const factory {{FeatureName}}Event.createRequested(Map<String, dynamic> data) = _CreateRequested;
+//   const factory {{FeatureName}}Event.deleteRequested(String id) = _DeleteRequested;
+// }
+
+// -----------------------------------------------------------------------------
+// Cubit (Simpler than full BLoC, recommended for most cases)
+// -----------------------------------------------------------------------------
+
+/// Cubit managing the state of {{FeatureName}}.
+class {{FeatureName}}Cubit extends Cubit<{{FeatureName}}State> {
+  {{FeatureName}}Cubit({required this.repository}) : super(const {{FeatureName}}State.initial());
+
+  final {{FeatureName}}Repository repository;
+
+  /// Loads the list of items.
+  Future<void> load() async {
+    emit(const {{FeatureName}}State.loading());
+    try {
+      final items = await repository.fetchAll();
+      emit({{FeatureName}}State.loaded(items: items));
+    } on AppException catch (e) {
+      emit({{FeatureName}}State.error(message: e.message));
+    } catch (e) {
+      emit({{FeatureName}}State.error(message: e.toString()));
+    }
+  }
+
+  /// Creates a new item.
+  Future<void> create(Map<String, dynamic> data) async {
+    // Optional: save current state to restore on error
+    final currentItems = state.maybeMap(
+      loaded: (s) => s.items,
+      orElse: () => <{{FeatureName}}Model>[],
+    );
+
+    emit(const {{FeatureName}}State.loading());
+    try {
+      final newItem = await repository.create(data);
+      emit({{FeatureName}}State.loaded(items: [...currentItems, newItem]));
+    } on AppException catch (e) {
+      emit({{FeatureName}}State.loaded(items: currentItems)); // Restore
+      emit({{FeatureName}}State.error(message: e.message)); // Could use a specific error event/state here
+    }
+  }
+
+  /// Deletes an item by [id].
+  Future<void> delete(String id) async {
+    final currentItems = state.maybeMap(
+      loaded: (s) => s.items,
+      orElse: () => <{{FeatureName}}Model>[],
+    );
+
+    // Optimistic update
+    emit({{FeatureName}}State.loaded(
+      items: currentItems.where((i) => i.id != id).toList(),
+    ));
+
+    try {
+      await repository.delete(id);
+    } on AppException catch (e) {
+      // Rollback on failure
+      emit({{FeatureName}}State.loaded(items: currentItems));
+      emit({{FeatureName}}State.error(message: e.message));
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// State file (usually in {{feature_name}}_state.dart)
+// -----------------------------------------------------------------------------
+/*
+part of '{{feature_name}}_cubit.dart';
+
+@freezed
+class {{FeatureName}}State with _${{FeatureName}}State {
+  const factory {{FeatureName}}State.initial() = _Initial;
+  const factory {{FeatureName}}State.loading() = _Loading;
+  const factory {{FeatureName}}State.loaded({required List<{{FeatureName}}Model> items}) = _Loaded;
+  const factory {{FeatureName}}State.error({required String message}) = _Error;
+}
+*/

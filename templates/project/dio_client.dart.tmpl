@@ -1,0 +1,110 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+// RIVERPOD: import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../env/env_config.dart';
+
+// RIVERPOD: part 'dio_client.g.dart';
+// RIVERPOD: @riverpod
+// RIVERPOD: DioClient dioClient(DioClientRef ref) => DioClient(baseUrl: EnvConfig.apiBaseUrl);
+
+/// A configured Dio client for network requests.
+class DioClient {
+  DioClient({required String baseUrl, Dio? dio}) : _dio = dio ?? Dio() {
+    _dio.options = BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 15),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+
+    // Add interceptors
+    _dio.interceptors.addAll([
+      // _AuthInterceptor(),
+      // _ErrorInterceptor(),
+      if (EnvConfig.enableLogging && kDebugMode) _LoggingInterceptor(),
+    ]);
+  }
+
+  final Dio _dio;
+
+  Future<Response<T>> get<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return _dio.get<T>(
+      path,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
+  }
+
+  Future<Response<T>> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return _dio.post<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
+  Future<Response<T>> put<T>(
+    String path, {
+    dynamic data,
+    Options? options,
+  }) async {
+    return _dio.put<T>(path, data: data, options: options);
+  }
+
+  Future<Response<T>> patch<T>(
+    String path, {
+    dynamic data,
+    Options? options,
+  }) async {
+    return _dio.patch<T>(path, data: data, options: options);
+  }
+
+  Future<Response<T>> delete<T>(
+    String path, {
+    dynamic data,
+    Options? options,
+  }) async {
+    return _dio.delete<T>(path, data: data, options: options);
+  }
+}
+
+class _LoggingInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    debugPrint('→ ${options.method} ${options.uri}');
+    if (options.data != null) {
+      debugPrint('  Body: ${options.data}');
+    }
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    debugPrint('← ${response.statusCode} ${response.requestOptions.uri}');
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    debugPrint('✖ ${err.response?.statusCode ?? 'N/A'} ${err.requestOptions.uri}');
+    debugPrint('  Error: ${err.message}');
+    handler.next(err);
+  }
+}

@@ -1,0 +1,35 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part '{{feature_name}}_model.freezed.dart';
+part '{{feature_name}}_model.g.dart';
+
+/// {{FeatureName}} domain model.
+///
+/// Immutable data class with JSON serialization.
+/// All fields are documented with their purpose.
+@freezed
+class {{FeatureName}}Model with _${{FeatureName}}Model {
+  const factory {{FeatureName}}Model({
+    /// Unique identifier
+    required String id,
+
+    /// Display name
+    required String name,
+
+    /// Optional description
+    String? description,
+
+    /// Whether the item is active
+    @Default(true) bool isActive,
+
+    /// Creation timestamp
+    required DateTime createdAt,
+
+    /// Last update timestamp
+    DateTime? updatedAt,
+  }) = _{{FeatureName}}Model;
+
+  /// Creates a [{{FeatureName}}Model] from a JSON map.
+  factory {{FeatureName}}Model.fromJson(Map<String, dynamic> json) =>
+      _${{FeatureName}}ModelFromJson(json);
+}

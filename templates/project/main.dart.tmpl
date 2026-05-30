@@ -1,0 +1,49 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+// RIVERPOD: import 'package:flutter_riverpod/flutter_riverpod.dart';
+// BLOC: import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'app.dart';
+import 'core/env/env_config.dart';
+
+Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Set preferred orientations
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Global Flutter error handling
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    // TODO_FORGE: Add crash reporting (Sentry, Crashlytics)
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+  };
+
+  // Global platform error handling
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('PlatformError: $error\n$stack');
+    // TODO_FORGE: Add crash reporting
+    return true;
+  };
+
+  // Initialize services based on environment
+  if (EnvConfig.enableLogging) {
+    debugPrint('🚀 Starting app in ${EnvConfig.flavor.name} mode');
+    debugPrint('📡 API: ${EnvConfig.apiBaseUrl}');
+  }
+
+  runApp(await builder());
+}
+
+// Entry point — use --dart-define-from-file=env/dev.json
+void main() => bootstrap(
+      () =>
+          // RIVERPOD: ProviderScope(child: const App()),
+          // BLOC: MultiBlocProvider(providers: [...], child: const App()),
+          const App(),
+    );

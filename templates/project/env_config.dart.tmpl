@@ -1,0 +1,38 @@
+enum Flavor { dev, staging, prod }
+
+/// Environment configuration.
+/// 
+/// Values are injected at compile time using `--dart-define-from-file`.
+class EnvConfig {
+  EnvConfig._();
+
+  static const appName = String.fromEnvironment(
+    'APP_NAME',
+    defaultValue: '{{APP_NAME}} Dev',
+  );
+  
+  static const appSuffix = String.fromEnvironment(
+    'APP_SUFFIX',
+    defaultValue: '.dev',
+  );
+  
+  static const apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8080/api/v1',
+  );
+  
+  static const enableLogging = bool.fromEnvironment(
+    'ENABLE_LOGGING',
+    defaultValue: true,
+  );
+
+  static Flavor get flavor {
+    if (appSuffix.contains('dev')) return Flavor.dev;
+    if (appSuffix.contains('staging')) return Flavor.staging;
+    return Flavor.prod;
+  }
+
+  static bool get isDev => flavor == Flavor.dev;
+  static bool get isStaging => flavor == Flavor.staging;
+  static bool get isProd => flavor == Flavor.prod;
+}

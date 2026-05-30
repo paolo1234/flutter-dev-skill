@@ -1,0 +1,51 @@
+import 'package:dio/dio.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../domain/models/{{feature_name}}_model.dart';
+import '../../domain/repositories/{{feature_name}}_repository.dart';
+import '../datasources/{{feature_name}}_remote_datasource.dart';
+
+/// Concrete implementation of [{{FeatureName}}Repository].
+///
+/// Coordinates between remote API and local cache (if any).
+class {{FeatureName}}RepositoryImpl implements {{FeatureName}}Repository {
+  {{FeatureName}}RepositoryImpl({
+    required this.remoteDatasource,
+  });
+
+  final {{FeatureName}}RemoteDatasource remoteDatasource;
+
+  @override
+  Future<List<{{FeatureName}}Model>> fetchAll() async {
+    try {
+      return await remoteDatasource.fetchAll();
+    } on DioException catch (e) {
+      // Map DioException to AppException here if not done by interceptor
+      throw e.error ?? e;
+    }
+  }
+
+  @override
+  Future<{{FeatureName}}Model?> getById(String id) async {
+    try {
+      return await remoteDatasource.getById(id);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      throw e.error ?? e;
+    }
+  }
+
+  @override
+  Future<{{FeatureName}}Model> create(Map<String, dynamic> data) async {
+    return await remoteDatasource.create(data);
+  }
+
+  @override
+  Future<void> update(String id, Map<String, dynamic> data) async {
+    await remoteDatasource.update(id, data);
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    await remoteDatasource.delete(id);
+  }
+}

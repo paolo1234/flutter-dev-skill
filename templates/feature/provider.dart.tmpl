@@ -1,0 +1,69 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../data/datasources/{{feature_name}}_remote_datasource.dart';
+import '../../data/repositories/{{feature_name}}_repository_impl.dart';
+import '../../domain/models/{{feature_name}}_model.dart';
+import '../../domain/repositories/{{feature_name}}_repository.dart';
+
+part '{{feature_name}}_provider.g.dart';
+
+// -----------------------------------------------------------------------------
+// Dependencies
+// -----------------------------------------------------------------------------
+
+@riverpod
+{{FeatureName}}RemoteDatasource {{featureName}}RemoteDatasource({{FeatureName}}RemoteDatasourceRef ref) {
+  // final dio = ref.watch(dioClientProvider);
+  // return {{FeatureName}}RemoteDatasource(dio);
+  throw UnimplementedError(); // Replace with actual implementation
+}
+
+@riverpod
+{{FeatureName}}Repository {{featureName}}Repository({{FeatureName}}RepositoryRef ref) {
+  final remoteDatasource = ref.watch({{featureName}}RemoteDatasourceProvider);
+  return {{FeatureName}}RepositoryImpl(remoteDatasource: remoteDatasource);
+}
+
+// -----------------------------------------------------------------------------
+// State Management
+// -----------------------------------------------------------------------------
+
+/// Provider for the list of {{FeatureName}} items.
+///
+/// Uses [AsyncNotifier] to handle async data loading, error states,
+/// and provide mutation methods (create, delete, etc.).
+@riverpod
+class {{FeatureName}} extends _${{FeatureName}} {
+  @override
+  FutureOr<List<{{FeatureName}}Model>> build() async {
+    final repository = ref.watch({{featureName}}RepositoryProvider);
+    return repository.fetchAll();
+  }
+
+  /// Creates a new item and updates the state optimistically or by refreshing.
+  Future<void> create(Map<String, dynamic> data) async {
+    // Set state to loading to show spinner (optional)
+    // state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read({{featureName}}RepositoryProvider);
+      final newItem = await repository.create(data);
+      
+      // Update state by adding the new item
+      final currentList = state.valueOrNull ?? [];
+      return [...currentList, newItem];
+    });
+  }
+
+  /// Deletes an item by [id].
+  Future<void> delete(String id) async {
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read({{featureName}}RepositoryProvider);
+      await repository.delete(id);
+      
+      // Update state by removing the item
+      final currentList = state.valueOrNull ?? [];
+      return currentList.where((item) => item.id != id).toList();
+    });
+  }
+}

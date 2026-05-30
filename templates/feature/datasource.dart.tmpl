@@ -1,0 +1,36 @@
+import '../../../../core/network/dio_client.dart';
+import '../../domain/models/{{feature_name}}_model.dart';
+
+/// Remote datasource for {{FeatureName}}.
+///
+/// Handles all API communication specific to this feature.
+class {{FeatureName}}RemoteDatasource {
+  {{FeatureName}}RemoteDatasource(this._client);
+
+  final DioClient _client;
+  static const _endpoint = '/api/v1/{{feature_name}}s';
+
+  Future<List<{{FeatureName}}Model>> fetchAll() async {
+    final response = await _client.get(_endpoint);
+    final data = response.data as List;
+    return data.map((json) => {{FeatureName}}Model.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  Future<{{FeatureName}}Model> getById(String id) async {
+    final response = await _client.get('$_endpoint/$id');
+    return {{FeatureName}}Model.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<{{FeatureName}}Model> create(Map<String, dynamic> data) async {
+    final response = await _client.post(_endpoint, data: data);
+    return {{FeatureName}}Model.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> update(String id, Map<String, dynamic> data) async {
+    await _client.put('$_endpoint/$id', data: data);
+  }
+
+  Future<void> delete(String id) async {
+    await _client.delete('$_endpoint/$id');
+  }
+}

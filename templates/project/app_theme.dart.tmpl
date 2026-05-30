@@ -1,0 +1,242 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// ============================================================================
+// APP THEME — Material 3 Design System
+// ============================================================================
+
+class AppTheme {
+  AppTheme._();
+
+  static ThemeData light() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: AppColors.lightScheme,
+      textTheme: _textTheme,
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        backgroundColor: AppColors.lightScheme.surface,
+        foregroundColor: AppColors.lightScheme.onSurface,
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.medium,
+          side: BorderSide(color: AppColors.lightScheme.outlineVariant),
+        ),
+        clipBehavior: Clip.antiAlias,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(borderRadius: AppRadius.medium),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadius.medium,
+          borderSide: BorderSide(color: AppColors.lightScheme.outline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadius.medium,
+          borderSide: BorderSide(color: AppColors.lightScheme.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.medium,
+          borderSide: BorderSide(color: AppColors.lightScheme.error),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.small),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        showDragHandle: true,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 64,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        indicatorShape: RoundedRectangleBorder(borderRadius: AppRadius.large),
+      ),
+      dividerTheme: DividerThemeData(
+        space: 1,
+        thickness: 1,
+        color: AppColors.lightScheme.outlineVariant,
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    final lightTheme = light();
+    return lightTheme.copyWith(
+      brightness: Brightness.dark,
+      colorScheme: AppColors.darkScheme,
+      appBarTheme: lightTheme.appBarTheme.copyWith(
+        backgroundColor: AppColors.darkScheme.surface,
+        foregroundColor: AppColors.darkScheme.onSurface,
+      ),
+      cardTheme: lightTheme.cardTheme?.copyWith(
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.medium,
+          side: BorderSide(color: AppColors.darkScheme.outlineVariant),
+        ),
+      ),
+    );
+  }
+
+  static TextTheme get _textTheme {
+    // Replace 'Inter' with the font chosen for the project
+    return GoogleFonts.interTextTheme().copyWith(
+      headlineLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
+      headlineMedium: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      headlineSmall: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      titleMedium: GoogleFonts.inter(fontWeight: FontWeight.w500),
+      titleSmall: GoogleFonts.inter(fontWeight: FontWeight.w500),
+      bodyLarge: GoogleFonts.inter(height: 1.5),
+      bodyMedium: GoogleFonts.inter(height: 1.5),
+      labelLarge: GoogleFonts.inter(fontWeight: FontWeight.w600),
+    );
+  }
+}
+
+// ============================================================================
+// COLORS — Generate from seed at https://m3.material.io/theme-builder
+// ============================================================================
+
+class AppColors {
+  AppColors._();
+
+  // Replace these with your app's actual color scheme
+  static const lightScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF1A73E8),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFFD3E3FD),
+    onPrimaryContainer: Color(0xFF041E49),
+    secondary: Color(0xFF5F6368),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFE8EAED),
+    onSecondaryContainer: Color(0xFF1F1F1F),
+    tertiary: Color(0xFF188038),
+    onTertiary: Color(0xFFFFFFFF),
+    error: Color(0xFFD93025),
+    onError: Color(0xFFFFFFFF),
+    errorContainer: Color(0xFFFCE8E6),
+    onErrorContainer: Color(0xFF5F2120),
+    surface: Color(0xFFFAFAFA),
+    onSurface: Color(0xFF1F1F1F),
+    surfaceContainerHighest: Color(0xFFE0E0E0),
+    surfaceContainerLow: Color(0xFFF5F5F5),
+    outline: Color(0xFF80868B),
+    outlineVariant: Color(0xFFDADCE0),
+  );
+
+  static const darkScheme = ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFF8AB4F8),
+    onPrimary: Color(0xFF062E6F),
+    primaryContainer: Color(0xFF0842A0),
+    onPrimaryContainer: Color(0xFFD3E3FD),
+    secondary: Color(0xFFBDC1C6),
+    onSecondary: Color(0xFF303134),
+    secondaryContainer: Color(0xFF3C4043),
+    onSecondaryContainer: Color(0xFFE8EAED),
+    tertiary: Color(0xFF81C995),
+    onTertiary: Color(0xFF0D652D),
+    error: Color(0xFFF28B82),
+    onError: Color(0xFF601410),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFCE8E6),
+    surface: Color(0xFF1F1F1F),
+    onSurface: Color(0xFFE8EAED),
+    surfaceContainerHighest: Color(0xFF3C4043),
+    surfaceContainerLow: Color(0xFF2D2D2D),
+    outline: Color(0xFF9AA0A6),
+    outlineVariant: Color(0xFF3C4043),
+  );
+
+  // Semantic colors (same for both themes)
+  static const success = Color(0xFF188038);
+  static const warning = Color(0xFFF9AB00);
+  static const info = Color(0xFF1A73E8);
+}
+
+// ============================================================================
+// SPACING — 8pt Grid System
+// ============================================================================
+
+class AppSpacing {
+  AppSpacing._();
+
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 16;
+  static const double lg = 24;
+  static const double xl = 32;
+  static const double xxl = 48;
+
+  static const pagePadding = EdgeInsets.symmetric(horizontal: 16);
+  static const cardPadding = EdgeInsets.all(16);
+  static const listItemSpacing = 8.0;
+  static const sectionSpacing = 24.0;
+}
+
+// ============================================================================
+// BORDER RADIUS
+// ============================================================================
+
+class AppRadius {
+  AppRadius._();
+
+  static final small = BorderRadius.circular(8);
+  static final medium = BorderRadius.circular(12);
+  static final large = BorderRadius.circular(16);
+  static final extraLarge = BorderRadius.circular(24);
+  static final circle = BorderRadius.circular(999);
+}
+
+// ============================================================================
+// DURATIONS & CURVES
+// ============================================================================
+
+class AppDurations {
+  AppDurations._();
+
+  static const instant = Duration(milliseconds: 100);
+  static const fast = Duration(milliseconds: 200);
+  static const normal = Duration(milliseconds: 300);
+  static const slow = Duration(milliseconds: 500);
+}
+
+class AppCurves {
+  AppCurves._();
+
+  static const standard = Curves.easeInOut;
+  static const enter = Curves.easeOut;
+  static const exit = Curves.easeIn;
+  static const emphasize = Curves.easeInOutCubicEmphasized;
+}
