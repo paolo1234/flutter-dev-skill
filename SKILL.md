@@ -61,12 +61,13 @@ If Flutter IS installed:
 
 > These rules are NON-NEGOTIABLE. Violating them means the output is REJECTED.
 
-### R1 — No Placeholders, No TODO
-Every line of Dart code you generate must be **complete and functional**. 
+### R1 — Production-Grade Code (No Placeholders)
+Every line of Dart code you generate must be **complete, functional, and ready for production**. 
 - ❌ `// TODO: implement this`
 - ❌ `throw UnimplementedError()`
 - ❌ `/* placeholder */`
-- ✅ Complete, working implementation
+- ✅ Complete, working implementation with error handling, logging, and security in mind.
+- **MINDSET**: Treat every app as a Tier-1 Enterprise Application. Security, performance, obfuscation, and maintainability are not afterthoughts, they are the baseline.
 
 ### R2 — Phase Gates Are Mandatory
 You MUST wait for user approval at the end of each phase before proceeding to the next.
@@ -890,10 +891,11 @@ For each milestone in `.forge/05_milestones.md`:
    - Configure splash screen (flutter_native_splash)
    - Configure app name per flavor
 
-6. **Release Checklist**:
+6. **Release Checklist & Security Audit**:
    - Write `.forge/08_release_checklist.md`
-   - Run through checklist items
-   - Generate release build for testing
+   - Run through checklist items (Test, Coverage > 80%, Performance).
+   - **Security Audit**: Verify no API keys are hardcoded. Ensure obfuscation is enabled (`--obfuscate --split-debug-info`). Check SSL and Secure Storage implementations.
+   - Generate release build for testing (`flutter build apk/ipa --release`).
 
 7. **Update state files** and **present summary**
 
