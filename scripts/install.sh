@@ -27,6 +27,21 @@ cp -R "$ROOT_DIR/references/"* "$SKILL_DIR/references/"
 mkdir -p "$SKILL_DIR/templates"
 cp -R "$ROOT_DIR/templates/"* "$SKILL_DIR/templates/"
 
+mkdir -p "$SKILL_DIR/rules"
+cp -R "$ROOT_DIR/rules/"* "$SKILL_DIR/rules/"
+
+mkdir -p "$SKILL_DIR/phases"
+cp -R "$ROOT_DIR/phases/"* "$SKILL_DIR/phases/"
+
+mkdir -p "$SKILL_DIR/state-formats"
+cp -R "$ROOT_DIR/state-formats/"* "$SKILL_DIR/state-formats/"
+
+mkdir -p "$SKILL_DIR/commands"
+cp -R "$ROOT_DIR/commands/"* "$SKILL_DIR/commands/"
+
+mkdir -p "$SKILL_DIR/docs"
+cp -R "$ROOT_DIR/docs/"* "$SKILL_DIR/docs/"
+
 mkdir -p "$SKILL_DIR/examples"
 # Copia examples solo se ci sono file
 if [ -d "$ROOT_DIR/examples" ] && [ "$(ls -A "$ROOT_DIR/examples")" ]; then

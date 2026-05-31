@@ -22,6 +22,11 @@ xcopy /S /E /Y "..\SKILL.md" "%SKILL_DIR%\" >nul
 xcopy /S /E /Y "..\references\*" "%SKILL_DIR%\references\" >nul
 xcopy /S /E /Y "..\templates\*" "%SKILL_DIR%\templates\" >nul
 xcopy /S /E /Y "..\examples\*" "%SKILL_DIR%\examples\" >nul
+xcopy /S /E /Y "..\rules\*" "%SKILL_DIR%\rules\" >nul
+xcopy /S /E /Y "..\phases\*" "%SKILL_DIR%\phases\" >nul
+xcopy /S /E /Y "..\state-formats\*" "%SKILL_DIR%\state-formats\" >nul
+xcopy /S /E /Y "..\commands\*" "%SKILL_DIR%\commands\" >nul
+xcopy /S /E /Y "..\docs\*" "%SKILL_DIR%\docs\" >nul
 
 if %errorlevel% neq 0 (
     echo [X] Errore durante l'installazione della skill.
