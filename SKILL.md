@@ -217,6 +217,13 @@ As the project grows, you MUST NOT forget tasks or skip steps.
 - The `docs/` folder must always reflect the current state of the app, never a past state.
 - At the end of each session, verify all state files are up to date before stopping.
 
+### R20 — Anti-Prototype & UX Polish Audit
+- The app must NEVER feel like a prototype or a sterile wireframe.
+- **Interactivity Audit**: Every logical element (lists, cards, ranks, images) MUST be interactive unless strictly decorative. If an item is tapped, it should show details, navigate, or provide feedback.
+- **Data Audit**: Never leave hardcoded placeholders. Ensure real or dynamic data can be fetched and displayed beautifully.
+- **Cloud Database Audit**: If using a cloud backend (Supabase, Firebase, etc.), you MUST explicitly generate the SQL schema or security rules and ensure the user executes them BEFORE testing any offline/sync logic.
+- **Copy & UI Polish**: Review every screen to ensure all text makes sense (good copy), UI is aligned, empty states are not just blank pages, and navigation (back buttons, tabs) never leaves the user trapped.
+
 ---
 
 ## .forge/ STATE FILES FORMAT
@@ -594,10 +601,13 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 ```markdown
 # Release Checklist — [App Name]
 
-## Pre-Release
+## Pre-Release (Technical & UX Audit)
 - [ ] flutter analyze --fatal-infos → 0 issues
 - [ ] flutter test → all passing
 - [ ] flutter test --coverage → >80%
+- [ ] **UX Audit**: Tutte le schermate hanno senso? Le card e le liste sono interattive? Le navigazioni funzionano senza bloccare l'utente?
+- [ ] **UI Audit**: Non ci sono elementi palesemente "prototipali" o segnaposto? Copy curato e non banale?
+- [ ] **Database Audit**: Lo schema remoto (es. tabelle Supabase) è stato fisicamente creato e allineato col DB locale? Il sync funziona?
 - [ ] Manual QA su Android (device reale o emulatore)
 - [ ] Manual QA su iOS (simulator o device)
 - [ ] Performance profiling (60fps, no jank)
