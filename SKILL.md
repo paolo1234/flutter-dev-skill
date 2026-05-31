@@ -163,6 +163,30 @@ As the project grows, you MUST NOT forget tasks or skip steps.
 - Document scalability limits in `.forge/10_scalability.md`: how many concurrent users, API calls/month, storage limits based on chosen service tiers.
 - Use pagination for all lists. Use caching strategies. Design DB schemas for growth.
 
+### R17 — Assets & Branding
+- Every app needs a **complete visual identity**: app icon, splash screen, onboarding illustrations, empty state illustrations, and (if needed) sound effects or haptic patterns.
+- Use the `generate_image` tool to create custom illustrations, icons, and visual assets. Do NOT use placeholder images.
+- For animations, prefer **Lottie** (via `lottie` package) for complex animations. Document all animations needed in `.forge/11_asset_manifest.md`.
+- For sound effects (if the app requires them — e.g., gamification, notifications), source free-license sounds (CC0) and document their license.
+- ALL assets must be catalogued in `.forge/11_asset_manifest.md` with: filename, type, purpose, source, license, and dimensions/format.
+
+### R18 — Copywriting & Microcopy
+- Every user-facing string must be **intentionally written**, not an afterthought.
+- **Onboarding text**: Must be compelling, concise, and benefit-focused (not feature-focused).
+- **Button labels**: Action-oriented verbs ("Salva", "Inizia", "Continua"), never generic ("OK", "Submit").
+- **Error messages**: Must be human-friendly, explain what happened, and suggest how to fix it. Never show raw error codes to users.
+- **Empty states**: Must have a friendly message + illustration + clear CTA.
+- **Notification text**: Push notifications must be compelling and actionable, never generic.
+- **Store listing copy** (Phase 5): Title, subtitle, description (short + long), keywords — all optimized for ASO.
+- All copy must be defined in localization files (`.arb`) from day one, never hardcoded in widgets.
+
+### R19 — Living Documentation
+- Documentation is NOT a one-time task. It must be updated continuously.
+- After EVERY milestone completion, update: `05_milestones.md`, `07_changelog.md`, and any affected `.forge/` files.
+- If architecture decisions change during implementation, update `04_architecture.md` immediately.
+- The `docs/` folder must always reflect the current state of the app, never a past state.
+- At the end of each session, verify all state files are up to date before stopping.
+
 ---
 
 ## .forge/ STATE FILES FORMAT
@@ -633,6 +657,51 @@ lib/
 - [ ] Nessun valore hardcoded (tutto da config)
 ```
 
+### `11_asset_manifest.md` (Phase 3 output)
+```markdown
+# Asset Manifest — [App Name]
+
+## App Icon
+| Asset | Dimensions | Format | Status | Note |
+|---|---|---|---|---|
+| app_icon | 1024x1024 | PNG | [ ] | Adaptive (Android) + iOS |
+| app_icon_foreground | 1024x1024 | PNG | [ ] | Android adaptive foreground |
+
+## Splash Screen
+| Asset | Type | Format | Status | Note |
+|---|---|---|---|---|
+| splash_logo | Image / Lottie | PNG/JSON | [ ] | Centered logo |
+| splash_background | Color / Gradient | — | [ ] | From design system |
+
+## Onboarding Illustrations
+| Screen | Asset Name | Description | Status |
+|---|---|---|---|
+| Onboarding 1 | onboarding_1 | [Descrizione scena] | [ ] |
+| Onboarding 2 | onboarding_2 | [Descrizione scena] | [ ] |
+| Onboarding 3 | onboarding_3 | [Descrizione scena] | [ ] |
+
+## Empty State Illustrations
+| Screen | Asset Name | Description | Status |
+|---|---|---|---|
+| [Screen name] | empty_[name] | [Descrizione] | [ ] |
+
+## Lottie Animations (if applicable)
+| Name | Purpose | Duration | Loop | Status |
+|---|---|---|---|---|
+| loading_spinner | Global loading | 2s | Yes | [ ] |
+| success_check | Action completed | 1.5s | No | [ ] |
+
+## Sound Effects (if applicable)
+| Name | Trigger | License | Source | Status |
+|---|---|---|---|---|
+| [sound_name] | [when played] | CC0 | [source URL] | [ ] |
+
+## Fonts
+| Font Family | Weights | Source | License |
+|---|---|---|---|
+| [e.g., Inter] | 400, 500, 600, 700 | Google Fonts | OFL |
+```
+
 ---
 
 ## PHASE 1 — PRODUCT IDEATION & FEATURE ENHANCEMENT
@@ -749,10 +818,24 @@ Go beyond basic requirements. Ask about:
    - Auth errors → redirect or dialog
    - Timeout → retry automatically
 
-7. **Write `.forge/02_ux_flows.md`** following the format
-8. **Update `.forge/00_forge_config.yaml`** → `current_phase: 2`
-9. **Present summary** and **ASK FOR FEEDBACK**: *"Questa è la struttura dettagliata di ogni schermata. Manca qualcosa? C'è qualche interazione che vorresti diversa o qualche schermata edge-case che ho dimenticato?"*
-10. **STOP — wait for approval**
+7. **Push Notifications Strategy** (if applicable):
+   - Which events trigger push notifications? (e.g., new message, reminder, promo)
+   - Notification channels/categories (Android) and grouping strategy
+   - When to ask for notification permission (not at first launch — after demonstrating value)
+   - Local notifications (e.g., reminders, timers) vs remote push (e.g., new content, social)
+   - Notification copy: compelling, actionable text (Rule R18)
+   - Deep link target for each notification type
+
+8. **Analytics Event Mapping**:
+   - Define key user actions to track: screen views, button taps, feature usage, errors
+   - Map each event to a name and properties: `event_name(property1, property2)`
+   - Define conversion funnel: onboarding → registration → first action → retention
+   - This feeds directly into the marketing plan in `.forge/09_business_plan.md`
+
+9. **Write `.forge/02_ux_flows.md`** following the format
+10. **Update `.forge/00_forge_config.yaml`** → `current_phase: 2`
+11. **Present summary** and **ASK FOR FEEDBACK**: *"Questa è la struttura dettagliata di ogni schermata. Manca qualcosa? C'è qualche interazione che vorresti diversa o qualche schermata edge-case che ho dimenticato?"*
+12. **STOP — wait for approval**
 
 ---
 
@@ -810,9 +893,22 @@ Go beyond basic requirements. Ask about:
    - Search: in app bar vs dedicated screen
    - Detail view: push vs bottom sheet
 
-7. **Write `.forge/03_design_system.md`** following the format
-8. **Update `.forge/00_forge_config.yaml`** → `current_phase: 3`
-9. **Present summary** and **STOP — wait for approval**
+7. **Assets & Branding Plan** (Rule R17)
+   Identify ALL visual and audio assets the app needs:
+   - **App Icon**: Concept, style, colors. Use `generate_image` to create a draft.
+   - **Splash Screen**: Logo animation or static? Lottie or native?
+   - **Onboarding Illustrations**: How many screens? What does each illustrate?
+   - **Empty State Illustrations**: One per list/collection screen.
+   - **In-App Icons**: Which icon set? (Material Symbols, Lucide, custom?)
+   - **Sound Effects** (if applicable): Success chime, error buzz, notification sound.
+   - **Lottie Animations** (if applicable): Loading, success, celebration.
+   - Write `.forge/11_asset_manifest.md` cataloguing every asset needed.
+   - Ask user: *"Ecco tutti gli asset grafici e sonori che servono. Hai già un logo o preferisci che ne generi uno? Ci sono animazioni particolari che vorresti?"*
+
+8. **Write `.forge/03_design_system.md`** following the format
+9. **Update `.forge/00_forge_config.yaml`** → `current_phase: 3`
+10. **Present summary** and **ASK FOR FEEDBACK**: *"Come ti sembra questa estetica? Ho pensato a tutti i componenti e asset necessari. C'è qualche elemento visivo o animazione particolare che vorresti aggiungere?"*
+11. **STOP — wait for approval**
 
 ---
 
@@ -1010,20 +1106,33 @@ For each milestone in `.forge/05_milestones.md`:
    - Android: Google Play internal track deployment lane
    - Match for iOS signing (if applicable)
 
-5. **App Assets**:
-   - Configure adaptive icon for Android
-   - Configure app icon for iOS
-   - Configure splash screen (flutter_native_splash)
+5. **App Assets & Branding**:
+   - Generate final app icon using `generate_image` (1024x1024) and configure:
+     - Adaptive icon for Android (foreground + background layers)
+     - App icon for iOS
+   - Configure splash screen (flutter_native_splash or flutter_launcher_icons)
+   - Generate all onboarding and empty state illustrations (from `.forge/11_asset_manifest.md`)
    - Configure app name per flavor
+   - Implement sound effects if defined in asset manifest
 
-6. **Release Checklist & Security Audit**:
+6. **App Store Optimization (ASO) & Copywriting** (Rule R18):
+   - Write compelling **store title** (max 30 chars) with primary keyword
+   - Write **subtitle/short description** (max 80 chars) — benefit-focused
+   - Write **full description** (4000 chars max) — structured with features, benefits, social proof
+   - Research and define **keywords** (iOS: 100 chars keyword field)
+   - Define **store category** and **content rating**
+   - Generate **store screenshots** descriptions (what each screenshot should show)
+   - Write all copy in Italian + English (if multi-language)
+   - Save in `docs/store/aso_listing.md`
+
+7. **Release Checklist & Security Audit**:
    - Write `.forge/08_release_checklist.md`
    - Run through checklist items (Test, Coverage > 80%, Performance).
    - **Security Audit**: Verify no API keys are hardcoded. Ensure obfuscation is enabled (`--obfuscate --split-debug-info`). Check SSL and Secure Storage implementations.
    - Generate release build for testing (`flutter build apk/ipa --release`).
 
-7. **Update state files** and **present summary**
-8. **STOP — wait for approval before Phase 6**
+8. **Update state files** and **present summary**
+9. **STOP — wait for approval before Phase 6**
 
 ---
 
@@ -1151,6 +1260,10 @@ For each milestone in `.forge/05_milestones.md`:
 | Legal compliance & GDPR | Rule R14 | `docs/legal/` |
 | Business plan & costs | Rule R15 | `.forge/09_business_plan.md` |
 | Scalability analysis | Rule R16 | `.forge/10_scalability.md` |
+| Assets & branding | Rule R17 | `.forge/11_asset_manifest.md` |
+| Copywriting & microcopy | Rule R18 | `docs/store/aso_listing.md` |
+| Notifications strategy | Phase 2, step 7 | `.forge/02_ux_flows.md` |
+| Analytics event mapping | Phase 2, step 8 | `.forge/02_ux_flows.md` |
 | Setup main.dart | — | `templates/project/main.dart.tmpl` |
 | Setup App widget | — | `templates/project/app.dart.tmpl` |
 | Lint configuration | — | `templates/config/analysis_options.yaml.tmpl` |
