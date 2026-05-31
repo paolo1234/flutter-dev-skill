@@ -145,6 +145,24 @@ As the project grows, you MUST NOT forget tasks or skip steps.
 - When integrating third-party services (e.g., Supabase, Firebase, Stripe), ALWAYS use your web search capabilities or read current documentation to ensure you are using the most up-to-date SDK version and syntax.
 - Do NOT rely blindly on older training data. E.g., verify if an SDK requires a "publishable key" vs an "anon key" before implementing.
 
+### R14 — Legal & Regulatory Compliance
+- Every app MUST include GDPR-compliant privacy policy, terms & conditions, and cookie policy (if web).
+- ALL third-party services, SDKs, and APIs used MUST be documented in `docs/legal/third_party_register.md` with: name, license type, data processed, data residency, GDPR compliance status, and developer obligations.
+- Generate Italian-law-compliant legal documents in `docs/legal/`. These are REQUIRED before any store submission.
+- If the app collects personal data, implement consent management (opt-in, data deletion, data export).
+
+### R15 — Free-First Economics & Business Planning
+- ALWAYS prefer free tiers of services (Supabase free, Firebase Spark, Sentry free, etc.).
+- When proposing a service, ALWAYS document: free tier limits (users, requests, storage), what happens when limits are exceeded, and the cost of the next tier.
+- Ask the user if a paid alternative would be preferred, but always provide a fully functional free path first.
+- Create a documented Business Plan in `.forge/09_business_plan.md` covering monetization strategy and marketing plan.
+
+### R16 — Scalability & Modularity
+- NO hardcoded values: all configuration (URLs, feature flags, limits) MUST come from environment config or remote config.
+- Design for modularity: every feature must be self-contained and independently testable.
+- Document scalability limits in `.forge/10_scalability.md`: how many concurrent users, API calls/month, storage limits based on chosen service tiers.
+- Use pagination for all lists. Use caching strategies. Design DB schemas for growth.
+
 ---
 
 ## .forge/ STATE FILES FORMAT
@@ -158,8 +176,8 @@ All state files are created in the `.forge/` directory at the project root.
 
 project_name: ""
 project_description: ""
-current_phase: 1                    # 1-5
-current_phase_name: "product_ideation"  # product_ideation | ux_flows | design_system | architecture | devops
+current_phase: 1                    # 1-6
+current_phase_name: "product_ideation"  # product_ideation | ux_flows | design_system | architecture | devops | legal_compliance
 current_milestone: ""               # "" | M1 | M2 | ...
 state_management: ""                # riverpod | bloc | (set in Phase 4)
 architecture: "feature_first_clean" # feature_first_clean
@@ -175,6 +193,7 @@ code_generation: true               # freezed, json_serializable, build_runner
 networking: "dio"                   # dio
 database: ""                        # drift | none | (set in Phase 4)
 auth_method: ""                     # jwt | firebase | supabase | none | (set in Phase 1/4)
+monetization: ""                    # free | freemium | subscription | ads | none
 last_updated: ""
 phases_completed:
   phase_1: false
@@ -183,6 +202,7 @@ phases_completed:
   phase_4a: false
   phase_4b: false
   phase_5: false
+  phase_6: false
 ```
 
 ### `01_product_brief.md` (Phase 1 output)
@@ -220,6 +240,13 @@ phases_completed:
 
 ## Modello di Monetizzazione
 [Free / Freemium / Premium / Subscription / Ads / ...]
+[Strategia dettagliata: cosa è gratis, cosa è a pagamento, pricing]
+
+## Servizi Esterni & Costi
+| Servizio | Uso | Piano | Limiti Free Tier | Costo Upgrade |
+|---|---|---|---|---|
+| Supabase | DB + Auth | Free | 50K MAU, 500MB DB | $25/mo Pro |
+| ... | ... | ... | ... | ... |
 
 ## Piattaforme Target
 - [ ] Android
@@ -515,6 +542,14 @@ lib/
 - [ ] Manual QA su iOS (simulator o device)
 - [ ] Performance profiling (60fps, no jank)
 - [ ] Accessibilità base verificata
+- [ ] Security audit completato (no API keys in chiaro, obfuscation attivo)
+
+## Legal & Compliance
+- [ ] Privacy Policy pubblicata e linkata in app
+- [ ] Termini e Condizioni pubblicati e linkati in app
+- [ ] Consenso GDPR implementato (opt-in, diritto cancellazione)
+- [ ] Third-Party Register completo (`docs/legal/third_party_register.md`)
+- [ ] Licenze open-source esposte in-app (sezione "Licenze" in Settings)
 
 ## Store Assets
 - [ ] App icon (1024x1024 per iOS, adaptive per Android)
@@ -530,6 +565,72 @@ lib/
 - [ ] Signing configurato (keystore Android, provisioning iOS)
 - [ ] CI/CD pipeline funzionante
 - [ ] Build release testato
+```
+
+### `09_business_plan.md` (Phase 1 output)
+```markdown
+# Business Plan — [App Name]
+
+## Modello di Monetizzazione
+- Strategia scelta: [Free / Freemium / Subscription / Ads]
+- Cosa è gratis: [...]
+- Cosa è a pagamento (se applicabile): [...]
+- Pricing (se applicabile): [...]
+- Motivazione: [...]
+
+## Servizi Esterni — Analisi Costi
+| Servizio | Scopo | Piano Scelto | Limiti Free Tier | Costo Upgrade | Note |
+|---|---|---|---|---|---|
+| [es. Supabase] | Auth + DB | Free | 50K MAU, 500MB | $25/mo Pro | Sufficiente per MVP |
+| [es. Sentry] | Crash reporting | Free | 5K events/mo | $26/mo | OK fino a ~1000 DAU |
+
+## Scalabilità Stimata (Free Tier)
+- Utenti concorrenti stimati: [...]
+- API calls/mese: [...]
+- Storage disponibile: [...]
+- Quando sarà necessario upgradare: [...]
+
+## Piano di Marketing
+### Pre-Lancio
+- Landing page / social media presence
+- Beta testing (TestFlight / Play Console Internal Track)
+- Contenuti: [...]
+
+### Lancio
+- ASO (App Store Optimization): keywords, screenshots, descrizione
+- Canali: [social, community, influencer, PR]
+- Budget: [€0 / €X]
+
+### Post-Lancio
+- Retention strategy: [notifiche push, email, engagement loops]
+- Metriche chiave da monitorare: [DAU, MAU, retention D1/D7/D30, churn]
+- Roadmap feedback loop: come raccogliere e prioritizzare feedback utenti
+```
+
+### `10_scalability.md` (Phase 4A output)
+```markdown
+# Scalability Report — [App Name]
+
+## Limiti Attuali (Free Tier)
+| Risorsa | Servizio | Limite | Impatto al raggiungimento |
+|---|---|---|---|
+| Database rows | [Supabase] | 500MB | App non può salvare nuovi dati |
+| Auth users | [Supabase] | 50K MAU | Nuovi utenti non possono registrarsi |
+| API calls | [Servizio X] | Y/mese | Funzionalità Z smette di funzionare |
+| Storage | [Servizio Y] | Z GB | Upload immagini bloccato |
+
+## Strategia di Crescita
+- **Fase 1 (0-1K utenti)**: Free tier, monitoraggio metriche
+- **Fase 2 (1K-10K utenti)**: Valutare upgrade a piano Pro, ottimizzare query
+- **Fase 3 (10K+ utenti)**: Implementare caching aggressivo, CDN, pagination server-side
+
+## Pattern di Scalabilità Implementati
+- [ ] Pagination su tutte le liste
+- [ ] Caching con invalidazione
+- [ ] Lazy loading immagini
+- [ ] Debounce su ricerca
+- [ ] Compressione immagini prima dell'upload
+- [ ] Nessun valore hardcoded (tutto da config)
 ```
 
 ---
@@ -566,9 +667,16 @@ lib/
    - **P2 (Nice to Have)**: Feature che possono aspettare v1.1
    - Include sempre: onboarding, settings, error handling, loading states
 
-5. **Write `.forge/01_product_brief.md`** following the format above
-6. **Initialize `.forge/00_forge_config.yaml`** with project info
-7. **Present summary to user** and **STOP — wait for approval**
+5. **Business & Service Planning** (Rule R15):
+   - Identify ALL external services needed (auth, DB, storage, analytics, crash reporting).
+   - For EACH service: find the **best free option**, document its limits, and note the paid alternative.
+   - Ask the user: *"Per [servizio X] propongo [opzione gratuita] che ha questi limiti: [...]. Vuoi usare un'alternativa a pagamento come [Y] oppure restiamo sul free tier?"*
+   - Define monetization strategy (if applicable): is the app free, freemium, subscription, ad-supported?
+   - Write `.forge/09_business_plan.md`.
+
+6. **Write `.forge/01_product_brief.md`** following the format above
+7. **Initialize `.forge/00_forge_config.yaml`** with project info
+8. **Present summary to user** and **STOP — wait for approval**
 
 ### Creative Probing Questions
 Go beyond basic requirements. Ask about:
@@ -778,13 +886,22 @@ Go beyond basic requirements. Ask about:
    - **M(N+1) — Polish**: Animations, edge cases, empty states
    - **M(N+2) — Testing**: Unit tests, widget tests
    - **M(N+3) — DevOps**: Flavors, CI/CD, store prep
+   - **M(N+4) — Legal & Compliance**: Privacy Policy, T&C, GDPR consent, third-party register
 
    Each milestone must have **specific, detailed tasks** (see Rule R5).
 
-8. **Write `.forge/04_architecture.md`** following the format
-9. **Write `.forge/05_milestones.md`** with all milestones and tasks (all `[ ]`)
-10. **Update `.forge/00_forge_config.yaml`** → `current_phase: 4`, set `state_management`, `database`, etc.
-11. **Present summary** and **STOP — wait for approval**
+8. **Scalability Analysis** (Rule R16)
+   - Review ALL external services from `.forge/09_business_plan.md`
+   - Document exact limits for each service tier in `.forge/10_scalability.md`
+   - Identify bottlenecks: which limit will be hit first?
+   - Propose pagination, caching, and lazy-loading strategies
+   - Ensure NO hardcoded values in the architecture (all from env config)
+
+9. **Write `.forge/04_architecture.md`** following the format
+10. **Write `.forge/05_milestones.md`** with all milestones and tasks (all `[ ]`)
+11. **Write `.forge/10_scalability.md`** with scalability analysis
+12. **Update `.forge/00_forge_config.yaml`** → `current_phase: 4`, set `state_management`, `database`, etc.
+13. **Present summary** and **STOP — wait for approval**
 
 ---
 
@@ -906,6 +1023,64 @@ For each milestone in `.forge/05_milestones.md`:
    - Generate release build for testing (`flutter build apk/ipa --release`).
 
 7. **Update state files** and **present summary**
+8. **STOP — wait for approval before Phase 6**
+
+---
+
+## PHASE 6 — LEGAL, COMPLIANCE & DOCUMENTATION
+
+> You are the **Legal & Compliance Advisor**. Your goal: ensure the app is legally compliant for release in Italy/EU.
+
+### Prerequisites
+- Read ALL `.forge/` files for full project context
+- Read `references/security.md` for security practices
+- Identify all third-party services, SDKs, and APIs used in the project
+
+### Instructions
+
+1. **Third-Party Register**
+   For EVERY external dependency (SDK, API, service), document in `docs/legal/third_party_register.md`:
+   - Name and version
+   - License type (MIT, Apache 2.0, BSD, proprietary, etc.)
+   - What personal data it processes (if any)
+   - Data residency (EU, US, etc.)
+   - GDPR compliance status
+   - Developer obligations (attribution, restrictions, etc.)
+   - Link to official terms/privacy policy
+
+2. **Privacy Policy** (`docs/legal/privacy_policy.md`)
+   Generate a GDPR-compliant privacy policy (Italian) covering:
+   - Titolare del trattamento (developer/company info — ask user)
+   - Dati raccolti e finalità
+   - Base giuridica del trattamento
+   - Terze parti e trasferimenti extra-UE
+   - Periodo di conservazione
+   - Diritti dell'interessato (accesso, rettifica, cancellazione, portabilità)
+   - Cookie policy (se web)
+   - Contatti DPO (se applicabile)
+
+3. **Terms & Conditions** (`docs/legal/terms_and_conditions.md`)
+   Generate terms of service (Italian) covering:
+   - Descrizione del servizio
+   - Account utente e responsabilità
+   - Proprietà intellettuale
+   - Limitazione di responsabilità
+   - Legge applicabile e foro competente (Italia)
+   - Clausole di recesso
+
+4. **In-App Compliance Implementation**
+   Ensure the app code includes:
+   - Consent screen at first launch (checkbox "Ho letto e accetto...")
+   - Link to Privacy Policy and T&C accessible from Settings
+   - "Elimina il mio account" option (GDPR Art. 17 — right to erasure)
+   - Open-source licenses screen (Settings → Licenze)
+
+5. **Write all docs** in `docs/legal/`
+6. **Update `.forge/00_forge_config.yaml`** → `current_phase: 6`
+7. **Present summary** and **ASK FOR FEEDBACK**: *"Ecco la documentazione legale generata. ATTENZIONE: questa è una bozza generata da AI e NON sostituisce una consulenza legale professionale. Ti consiglio di farla revisionare da un avvocato prima del rilascio. Vuoi procedere?"*
+8. **STOP — wait for approval**
+
+> ⚠️ **DISCLAIMER**: I documenti legali generati sono bozze basate su best practice e normativa vigente. NON costituiscono consulenza legale. Si raccomanda SEMPRE la revisione da parte di un professionista legale prima della pubblicazione.
 
 ---
 
@@ -972,6 +1147,10 @@ For each milestone in `.forge/05_milestones.md`:
 | Setup CI/CD | `references/cicd.md` | `templates/cicd/` |
 | Check naming/import rules | `references/conventions.md` | — |
 | Check accessibility | `references/accessibility.md` | — |
+| Check security practices | `references/security.md` | — |
+| Legal compliance & GDPR | Rule R14 | `docs/legal/` |
+| Business plan & costs | Rule R15 | `.forge/09_business_plan.md` |
+| Scalability analysis | Rule R16 | `.forge/10_scalability.md` |
 | Setup main.dart | — | `templates/project/main.dart.tmpl` |
 | Setup App widget | — | `templates/project/app.dart.tmpl` |
 | Lint configuration | — | `templates/config/analysis_options.yaml.tmpl` |
