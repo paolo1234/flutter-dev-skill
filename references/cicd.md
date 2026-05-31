@@ -249,6 +249,82 @@ end
 # BUILD always increments
 ```
 
+## Security Audit Pipeline
+
+Aggiungi questo workflow per audit automatici di sicurezza:
+
+```yaml
+# .github/workflows/security_audit.yml
+name: Security Audit
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+  schedule:
+    - cron: '0 6 * * 1'  # Ogni lunedì mattina
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.x'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 1. Hardcoded secrets scan
+      - name: Scan hardcoded secrets
+        run: |
+          if rg -q "static const.*(key|secret|token|api)" lib/; then
+            echo "❌ Hardcoded secrets found!"
+            exit 1
+          fi
+          echo "✅ No hardcoded secrets"
+
+      # 2. SELECT * scan
+      - name: Check for SELECT *
+        run: |
+          if rg -q "\.select\('\\*'\)" lib/; then
+            echo "❌ SELECT * found in queries!"
+            exit 1
+          fi
+          echo "✅ No SELECT *"
+
+      # 3. Security TODO/FIXME scan
+      - name: Check security debt
+        run: |
+          if rg -q "TODO.*security|FIXME.*security|HACK.*security" lib/; then
+            echo "❌ Security debt found!"
+            exit 1
+          fi
+          echo "✅ No security debt"
+
+      # 4. HTTPS in production env
+      - name: Check HTTPS in prod config
+        run: |
+          if test -f env/prod.json && rg -q "http://" env/prod.json; then
+            echo "❌ HTTP endpoint in prod config!"
+            exit 1
+          fi
+          echo "✅ HTTPS-only in production"
+
+      # 5. Dependency audit
+      - name: Check outdated dependencies
+        run: flutter pub outdated --no-transitive
+
+      # 6. Flutter analyze (security lint rules)
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+```
+
 ## Secrets Required
 
 | Secret | Where | Purpose |

@@ -105,6 +105,7 @@ When implementing, read the relevant reference files from the `references/` dire
 - CI/CD → `references/cicd.md`
 - Accessibility → `references/accessibility.md`
 - Security → `references/security.md`
+- Security compliance → `references/security_checklist.md`
 
 ### R7 — Use Templates
 When creating new files, use the templates from the `templates/` directory as starting points.
@@ -166,10 +167,31 @@ As the project grows, you MUST NOT forget tasks or skip steps.
 - **After ANY file change**, check if other files need updating (e.g., adding a route requires updating the router, adding a dependency requires updating pubspec.yaml).
 - Use a **Checklist** at the end of your turn to verify you haven't missed anything.
 
-### R12 — Security First (No Hardcoded Secrets)
-- NEVER hardcode API keys, secret tokens, or sensitive URLs in Dart code.
-- ALWAYS use `--dart-define-from-file` (as defined in `references/flavors_and_envs.md`) or a `.env` package.
-- Validate inputs, escape data where necessary, and ensure secure storage is used for sensitive local data.
+### R12 — Security First (Enterprise-Grade)
+La sicurezza non è un afterthought. Ogni app deve seguire **TUTTE** le regole definite in `references/security.md` e verificabili con `references/security_checklist.md`.
+
+**Regole inviolabili:**
+- **MAI hardcodare** API key, token o credenziali nel codice Dart. Usa `--dart-define-from-file` per iniettarle.
+- **MAI usare SharedPreferences** per token JWT o dati sensibili. Usa `flutter_secure_storage` (Keystore/Keychain).
+- **Flutter Web**: non salvare token in LocalStorage (leggibile via XSS). Usa cookie HttpOnly + Secure gestiti dal backend.
+- **Certificate Pinning** per chiamate critiche in produzione. Disabilitato in development (non rallentare il debug).
+- **No SELECT \*** nelle query al database. Proiezioni sempre esplicite.
+- **Proxy backend per API AI**: le chiavi AI non devono MAI toccare il client Flutter.
+- **Rate limiting** attivo in produzione. Disabilitato in development per performance.
+- **Offuscamento** (`--obfuscate --split-debug-info`) solo nella build release.
+- **Play Integrity, FLAG_SECURE, PKCE** solo in produzione, non in development.
+- **RLS attivo** su tutte le tabelle del database con privilegio minimo (`user_id = auth.uid()`).
+- **Logging sanitizzato**: mai loggare password, token o dati personali. Logging dettagliato solo in dev.
+- **ReDoS protection**: timeout per regex lato server. Evita pattern con nested quantifier.
+- **Denial of Wallet**: hard cap giornaliero per chiamate AI.
+- **PII sanitization**: anonimizzare prima di inviare dati a provider AI.
+
+**Regola d'oro per development vs production:**
+> Ogni misura di sicurezza che **rallenta la compilazione o hot-reload** deve essere condizionale:
+> ```dart
+> if (EnvConfig.isDev) return; // Skipalo in dev
+> if (EnvConfig.isProd) { /* implementazione reale */ }
+> ```
 
 ### R13 — Verify Third-Party Technologies
 - When integrating third-party services (e.g., Supabase, Firebase, Stripe), ALWAYS use your web search capabilities or read current documentation to ensure you are using the most up-to-date SDK version and syntax.
@@ -223,6 +245,63 @@ As the project grows, you MUST NOT forget tasks or skip steps.
 - **Data Audit**: Never leave hardcoded placeholders. Ensure real or dynamic data can be fetched and displayed beautifully.
 - **Cloud Database Audit**: If using a cloud backend (Supabase, Firebase, etc.), you MUST explicitly generate the SQL schema or security rules and ensure the user executes them BEFORE testing any offline/sync logic.
 - **Copy & UI Polish**: Review every screen to ensure all text makes sense (good copy), UI is aligned, empty states are not just blank pages, and navigation (back buttons, tabs) never leaves the user trapped.
+
+### R21 — Security Audit Gate (Pre-Release)
+Prima di ogni release, il Security Compliance Checklist (`references/security_checklist.md`) deve essere eseguito e superato.
+
+- **Esegui la checklist completa** da `references/security_checklist.md` prima di ogni build release.
+- **Ogni item deve essere verde** o avere un esplicito rationale documentato in `.forge/06_tech_debt.md`.
+- **Zero hardcoded secrets**: il comando `rg "static const.*(key|secret|token|api)" lib/` deve dare 0 risultati.
+- **Zero SELECT \***: `rg "\.select\('\\*'\)" lib/` deve dare 0 risultati.
+- **Zero security TODO/FIXME**: `rg "TODO.*security\|FIXME.*security" lib/` deve dare 0 risultati.
+- **Dev vs Prod check**: ogni feature che rallenta la build in development deve essere condizionale (`if (EnvConfig.isProd)`).
+- **Crea una GitHub Action** `.github/workflows/security_audit.yml` con i controlli automatizzati della checklist (vedi `references/security_checklist.md` → Esecuzione Automatica).
+- **Se fallisce**: blocca la release. Non procedere fino a che tutti gli item non sono risolti.
+
+### R22 — Post-Completion Improvement Plan
+Dopo che TUTTE le milestone e task sono state completate (non prima), il sistema DEVE generare automaticamente un piano di miglioramento completo:
+
+1. **Schermate Review**: Analizza ogni schermata una per una. Identifica:
+   - Schermate mancanti (es. onboarding, settings, profile, empty states)
+   - Funzionalità incomplete o placeholder
+   - Mancanza di interattività (card non tapabili, liste statiche)
+   - Problemi di UX (navigazione bloccante, mancanza di feedback)
+   - Cattiva gestione degli stati (loading, error, empty)
+
+2. **Bug & Problemi**: Cerca pattern problematici:
+   - `throw UnimplementedError()` o `// TODO:` ancora presenti
+   - Gestione errori assente o generica
+   - Hardcoded string (invece di ARB/localization)
+   - Performance issues (build che ricreano widget, list senza builder)
+
+3. **Nuove Idee**: Propone miglioramenti sostanziali:
+   - Nuove feature che aumentano il valore dell'app
+   - Pattern di engagement (notifiche push, streak, gamification)
+   - Accessibilità e traduzioni
+   - Animazioni e micro-interazioni premium
+   - Ottimizzazioni per store (ASO, screenshot, metadata)
+
+4. **Output**: Scrivi il piano in `.forge/12_improvement_plan.md` con formato:
+   ```markdown
+   # Improvement Plan — [App Name]
+   
+   ## Schermate: [N] problemi trovati
+   | Schermata | Problema | Priority | Fix proposto |
+   |---|---|---|---|
+   
+   ## Bug: [N] trovati
+   | File | Problema | Priority | Fix |
+   |---|---|---|---|
+   
+   ## Nuove Feature: [N] proposte
+   | Feature | Descrizione | Effort | Impact |
+   |---|---|---|---|
+   
+   ## Next Release: vX.Y.Z
+   [Cosa includere nella prossima release, ordinato per priorità]
+   ```
+
+5. **Presenta il piano all'utente** e chiedi: *"Ho completato tutte le milestone. Ho analizzato l'app e trovato [N] aree di miglioramento. Vuoi che inizi a lavorare sul piano di miglioramento o preferisci rilasciare prima la versione corrente?"*
 
 ---
 

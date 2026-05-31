@@ -125,6 +125,61 @@ any → shared ✅ (shared widgets/utils are available to all)
 | Any method | 30 | Extract helper methods |
 | Any class | 150 | Split by responsibility |
 
+## Security Architecture Layer
+
+### Security Service Layer — `lib/core/security/`
+
+```
+lib/core/security/
+├── env_config.dart                  # EnvConfig (già in core/env/)
+├── secure_storage_service.dart      # Wrapper FlutterSecureStorage
+├── certificate_pinning.dart         # Cert pinning (solo prod)
+├── device_integrity_service.dart    # Play Integrity (solo prod)
+├── screen_security_service.dart     # FLAG_SECURE (solo prod)
+└── deeplink_validator.dart          # Deep link param validation
+```
+
+### Regole di Attivazione per Environment
+
+```dart
+// Ogni servizio di sicurezza DEVE controllare l'environment
+class CertificatePinningService {
+  static bool shouldEnable() => EnvConfig.isProd;
+
+  static void configure(HttpClient client) {
+    if (!shouldEnable()) {
+      // Development: permetti self-signed certs (hot reload veloce)
+      client.badCertificateCallback = (_, __, ___) => true;
+      return;
+    }
+    // Production: pinning attivo
+    client.badCertificateCallback = _verifyPin;
+  }
+}
+```
+
+### Data Flow Sicuro
+
+```
+Flutter App
+├── EnvConfig (dart-define-from-file) → API base URL, anon key
+├── SecureStorage (Keystore/Keychain) → JWT token, refresh token
+├── Dio (certificate pinning in prod) → Backend API
+└── MAI: hardcoded secrets, SharedPreferences per token, API key AI
+
+Backend
+├── Proxy per API AI (OpenAI/Anthropic — chiave mai nel client)
+├── Rate limiting (attivo in prod, lassista in dev)
+├── Input validation (sempre lato server)
+└── Sanitized logging (mai password, token, PII in chiaro)
+
+Database (Supabase/PostgreSQL)
+├── RLS attivo su ogni tabella
+├── Service Role key isolata (mai nel client)
+├── Proiezioni esplicite (no SELECT *)
+└── Filtri sanitizzati (whitelist campi)
+```
+
 ## Error Handling Architecture
 
 ### AppException Sealed Class

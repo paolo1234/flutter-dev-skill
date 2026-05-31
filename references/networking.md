@@ -1,5 +1,88 @@
 # Networking Reference — Dio, Interceptors, JWT, Error Handling
 
+## Security: Certificate Pinning
+
+Il certificate pinning previene attacchi Man-in-the-Middle (MitM). **Attivo solo in produzione.**
+
+```dart
+class CertificatePinningInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // Il pinning è gestito a livello HttpClient, non interceptor
+    handler.next(options);
+  }
+}
+
+// Configurazione nel DioClient
+Dio createDioWithPinning({
+  required String baseUrl,
+  required bool enablePinning,
+}) {
+  final dio = Dio(BaseOptions(baseUrl: baseUrl));
+
+  if (enablePinning) {
+    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // Verifica l'impronta SHA-256 del certificato atteso
+        return _verifyFingerprint(cert, host);
+      };
+      return client;
+    };
+  } else {
+    // Development: permetti self-signed (non rallentare hot-reload)
+    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      client.badCertificateCallback = (_, __, ___) => true;
+      return client;
+    };
+  }
+
+  return dio;
+}
+
+bool _verifyFingerprint(X509Certificate cert, String host) {
+  // Recupera fingerprint attesa dalla configurazione
+  // const expectedPins = {'api.example.com': 'sha256/...'};
+  // Implementazione specifica per dominio
+  return false; // Blocca se non corrisponde
+}
+```
+
+## Security: Prevenzione SSRF (Lato Backend)
+
+```dart
+// Usa questo validator prima di fare richieste HTTP a URL forniti dall'utente
+class SsrfValidator {
+  static const _blockedIpRanges = [
+    '127.0.0.1',
+    '169.254.169.254',  // Metadata cloud
+    '10.',
+    '172.16.',
+    '192.168.',
+    '0.0.0.0',
+    '::1',
+  ];
+
+  static const _allowedDomains = <String>{
+    'api.github.com',
+    'cdn.example.com',
+  };
+
+  static bool isAllowed(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) return false;
+    if (uri.scheme != 'https') return false; // Solo HTTPS
+
+    final host = uri.host.toLowerCase();
+    if (_blockedIpRanges.any((ip) => host.startsWith(ip))) return false;
+    if (_allowedDomains.isNotEmpty && !_allowedDomains.contains(host)) return false;
+
+    return true;
+  }
+}
+```
+
 ## Dio Client Setup
 
 ```dart
@@ -9,6 +92,7 @@ class DioClient {
   DioClient({
     required String baseUrl,
     required TokenStorage tokenStorage,
+    required bool isDev,
     Dio? dio,
   }) : _dio = dio ?? Dio() {
     _dio.options = BaseOptions(
@@ -25,7 +109,7 @@ class DioClient {
     _dio.interceptors.addAll([
       AuthInterceptor(tokenStorage: tokenStorage, dio: _dio),
       ErrorInterceptor(),
-      LoggingInterceptor(),
+      LoggingInterceptor(isDev: isDev),
     ]);
   }
 
@@ -269,15 +353,31 @@ class ErrorInterceptor extends Interceptor {
 }
 ```
 
-## Logging Interceptor
+## Logging Interceptor (Security-Safe)
+
+> **Mai loggare payload con password, token JWT o dati personali in produzione.**
+> In produzione logga solo metodo, status code, URI — MAI il body.
 
 ```dart
 class LoggingInterceptor extends Interceptor {
+  LoggingInterceptor({required this.isDev});
+
+  final bool isDev;
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (!isDev) {
+      // Produzione: solo metodo e URI, niente body
+      debugPrint('→ ${options.method} ${options.uri}');
+      handler.next(options);
+      return;
+    }
+
+    // Development: logga tutto
     debugPrint('→ ${options.method} ${options.uri}');
     if (options.data != null) {
-      debugPrint('  Body: ${options.data}');
+      final sanitized = _sanitizeSensitiveData(options.data);
+      debugPrint('  Body: $sanitized');
     }
     handler.next(options);
   }
@@ -291,8 +391,24 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     debugPrint('✖ ${err.response?.statusCode ?? 'N/A'} ${err.requestOptions.uri}');
-    debugPrint('  Error: ${err.message}');
+    if (isDev) {
+      debugPrint('  Error: ${err.message}');
+    }
     handler.next(err);
+  }
+
+  /// Oscura campi sensibili nei log
+  dynamic _sanitizeSensitiveData(dynamic data) {
+    if (data is Map) {
+      final sensitiveKeys = {'password', 'token', 'secret', 'jwt', 'credit_card', 'ssn'};
+      return data.map((key, value) {
+        if (sensitiveKeys.any((s) => key.toString().toLowerCase().contains(s))) {
+          return MapEntry(key, '***');
+        }
+        return MapEntry(key, _sanitizeSensitiveData(value));
+      });
+    }
+    return data;
   }
 }
 ```

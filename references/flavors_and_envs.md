@@ -19,7 +19,12 @@ env/
   "APP_SUFFIX": ".dev",
   "API_BASE_URL": "https://api-dev.example.com",
   "ENABLE_LOGGING": "true",
-  "SENTRY_DSN": ""
+  "SENTRY_DSN": "",
+  "SUPABASE_URL": "https://xxx.supabase.co",
+  "SUPABASE_ANON_KEY": "eyJhbGciOi...",
+  "ENABLE_CERT_PINNING": "false",
+  "ENABLE_RATE_LIMITING": "false",
+  "ENABLE_SCREEN_SECURITY": "false"
 }
 
 // env/staging.json
@@ -28,7 +33,12 @@ env/
   "APP_SUFFIX": ".staging",
   "API_BASE_URL": "https://api-staging.example.com",
   "ENABLE_LOGGING": "true",
-  "SENTRY_DSN": "https://xxx@sentry.io/yyy"
+  "SENTRY_DSN": "https://xxx@sentry.io/yyy",
+  "SUPABASE_URL": "https://xxx.supabase.co",
+  "SUPABASE_ANON_KEY": "eyJhbGciOi...",
+  "ENABLE_CERT_PINNING": "true",
+  "ENABLE_RATE_LIMITING": "true",
+  "ENABLE_SCREEN_SECURITY": "true"
 }
 
 // env/prod.json
@@ -37,7 +47,12 @@ env/
   "APP_SUFFIX": "",
   "API_BASE_URL": "https://api.example.com",
   "ENABLE_LOGGING": "false",
-  "SENTRY_DSN": "https://xxx@sentry.io/zzz"
+  "SENTRY_DSN": "https://xxx@sentry.io/zzz",
+  "SUPABASE_URL": "https://xxx.supabase.co",
+  "SUPABASE_ANON_KEY": "eyJhbGciOi...",
+  "ENABLE_CERT_PINNING": "true",
+  "ENABLE_RATE_LIMITING": "true",
+  "ENABLE_SCREEN_SECURITY": "true"
 }
 ```
 
@@ -52,6 +67,13 @@ class EnvConfig {
   static const apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8080');
   static const enableLogging = bool.fromEnvironment('ENABLE_LOGGING', defaultValue: true);
   static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
+  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  // Security feature flags — disabilitati in dev per performance
+  static const enableCertPinning = bool.fromEnvironment('ENABLE_CERT_PINNING', defaultValue: false);
+  static const enableRateLimiting = bool.fromEnvironment('ENABLE_RATE_LIMITING', defaultValue: false);
+  static const enableScreenSecurity = bool.fromEnvironment('ENABLE_SCREEN_SECURITY', defaultValue: false);
 
   static Flavor get flavor {
     if (appSuffix.contains('dev')) return Flavor.dev;
