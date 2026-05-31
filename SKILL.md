@@ -428,6 +428,13 @@ lib/
 ```
 
 ## Dipendenze (pubspec.yaml)
+- [list here]
+
+## Enterprise Setup
+- **Crash Reporting**: [e.g., Sentry / Firebase Crashlytics]
+- **Analytics**: [e.g., PostHog / Firebase Analytics]
+- **Localization**: [e.g., intl (ARB files) / easy_localization]
+- **Deep Linking**: [e.g., configurato su GoRouter e applinks]
 [Lista completa con versioni specifiche]
 
 ## Mappa Feature → Schermate → Provider/BLoC
@@ -732,16 +739,17 @@ Go beyond basic requirements. Ask about:
    └── ...
    ```
 
-3. **Define Dependencies**
+3. **Define Dependencies & Enterprise Setup**
    List ALL packages with specific versions for pubspec.yaml:
    - State management (flutter_riverpod + riverpod_generator OR flutter_bloc)
-   - Navigation (go_router)
+   - Navigation & Deep Linking (go_router, app_links)
    - Networking (dio, connectivity_plus)
-   - Serialization (freezed_annotation, json_annotation, freezed, json_serializable, build_runner)
-   - Local storage (drift OR hive_ce OR shared_preferences)
-   - UI (shimmer, cached_network_image, google_fonts, flutter_animate)
-   - Utilities (intl, path_provider, url_launcher, package_info_plus)
-   - Testing (mocktail, bloc_test if BLoC)
+   - Serialization (freezed_annotation, json_annotation)
+   - Local storage (flutter_secure_storage, drift/hive)
+   - Observability & Analytics (sentry_flutter OR firebase_crashlytics, firebase_analytics OR posthog_flutter)
+   - Localization (intl, flutter_localizations)
+   - UI & Utils (shimmer, intl, path_provider, etc.)
+   - Testing (mocktail)
 
 4. **Map Feature → Screens → State**
    Create a table:
