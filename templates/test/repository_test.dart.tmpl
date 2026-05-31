@@ -1,0 +1,86 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+// import 'package:__app__/features/__feature__/data/repositories/__repository_impl__.dart';
+// import 'package:__app__/features/__feature__/data/datasources/__datasource__.dart';
+// import 'package:__app__/features/__feature__/domain/models/__model__.dart';
+
+/// Template per test di repository con mock datasource.
+/// Personalizza: import, repository, datasource, model.
+
+// --- MOCKS ---
+// class MockRemoteDataSource extends Mock implements __RemoteDataSource__ {}
+// class MockLocalDataSource extends Mock implements __LocalDataSource__ {}
+
+void main() {
+  // late MockRemoteDataSource mockRemoteDataSource;
+  // late MockLocalDataSource mockLocalDataSource;
+  // late __RepositoryImpl__ repository;
+
+  setUp(() {
+    // mockRemoteDataSource = MockRemoteDataSource();
+    // mockLocalDataSource = MockLocalDataSource();
+    // repository = __RepositoryImpl__(
+    //   remoteDataSource: mockRemoteDataSource,
+    //   localDataSource: mockLocalDataSource,
+    // );
+  });
+
+  group('__RepositoryName__', () {
+    group('getAll', () {
+      test('returns data from remote when online', () async {
+        // Arrange
+        // when(() => mockRemoteDataSource.getAll())
+        //     .thenAnswer((_) async => [testItemDto]);
+
+        // Act
+        // final result = await repository.getAll();
+
+        // Assert
+        // expect(result, isNotEmpty);
+        // expect(result.length, 1);
+        // verify(() => mockRemoteDataSource.getAll()).called(1);
+      });
+
+      test('returns cached data when remote fails', () async {
+        // Arrange
+        // when(() => mockRemoteDataSource.getAll())
+        //     .thenThrow(Exception('Network error'));
+        // when(() => mockLocalDataSource.getCached())
+        //     .thenAnswer((_) async => [cachedItem]);
+
+        // Act
+        // final result = await repository.getAll();
+
+        // Assert
+        // expect(result, isNotEmpty);
+        // verify(() => mockLocalDataSource.getCached()).called(1);
+      });
+
+      test('throws AppException when both remote and cache fail', () async {
+        // Arrange
+        // when(() => mockRemoteDataSource.getAll())
+        //     .thenThrow(Exception('Network error'));
+        // when(() => mockLocalDataSource.getCached())
+        //     .thenThrow(Exception('Cache empty'));
+
+        // Act & Assert
+        // expect(() => repository.getAll(), throwsA(isA<AppException>()));
+      });
+    });
+
+    group('create', () {
+      test('calls remote datasource with correct parameters', () async {
+        // Arrange
+        // when(() => mockRemoteDataSource.create(any()))
+        //     .thenAnswer((_) async => createdItemDto);
+
+        // Act
+        // await repository.create(field1: 'test');
+
+        // Assert
+        // verify(() => mockRemoteDataSource.create(any())).called(1);
+      });
+    });
+  });
+}

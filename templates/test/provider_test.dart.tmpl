@@ -1,0 +1,86 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+// import 'package:__app__/features/__feature__/presentation/providers/__notifier__.dart';
+// import 'package:__app__/features/__feature__/domain/repositories/__repository__.dart';
+// import 'package:__app__/features/__feature__/domain/models/__model__.dart';
+
+/// Template per test di Riverpod provider/notifier.
+/// Personalizza: import, provider, repository mock, model.
+
+// --- MOCKS ---
+// class MockRepository extends Mock implements __Repository__ {}
+
+void main() {
+  // late MockRepository mockRepository;
+  late ProviderContainer container;
+
+  setUp(() {
+    // mockRepository = MockRepository();
+    container = ProviderContainer(
+      overrides: [
+        // __repositoryProvider__.overrideWithValue(mockRepository),
+      ],
+    );
+  });
+
+  tearDown(() {
+    container.dispose();
+  });
+
+  group('__NotifierName__', () {
+    test('initial state loads data successfully', () async {
+      // Arrange
+      // when(() => mockRepository.getAll()).thenAnswer((_) async => [testItem]);
+
+      // Act
+      // final notifier = container.read(__notifierProvider__.notifier);
+      // await container.read(__notifierProvider__.future);
+
+      // Assert
+      // final state = container.read(__notifierProvider__);
+      // expect(state.value, isNotNull);
+      // expect(state.value!.length, 1);
+    });
+
+    test('initial state handles error', () async {
+      // Arrange
+      // when(() => mockRepository.getAll()).thenThrow(Exception('Network error'));
+
+      // Act & Assert
+      // expect(
+      //   () => container.read(__notifierProvider__.future),
+      //   throwsA(isA<Exception>()),
+      // );
+    });
+
+    test('create adds item and refreshes list', () async {
+      // Arrange
+      // when(() => mockRepository.getAll()).thenAnswer((_) async => []);
+      // when(() => mockRepository.create(field1: any(named: 'field1')))
+      //     .thenAnswer((_) async {});
+
+      // Act
+      // await container.read(__notifierProvider__.future); // Initial load
+      // await container.read(__notifierProvider__.notifier).create(field1: 'test');
+
+      // Assert
+      // verify(() => mockRepository.create(field1: 'test')).called(1);
+      // verify(() => mockRepository.getAll()).called(2); // Initial + after create
+    });
+
+    test('delete removes item and refreshes list', () async {
+      // Arrange
+      // when(() => mockRepository.getAll()).thenAnswer((_) async => [testItem]);
+      // when(() => mockRepository.delete(any())).thenAnswer((_) async {});
+
+      // Act
+      // await container.read(__notifierProvider__.future);
+      // await container.read(__notifierProvider__.notifier).delete('test-id');
+
+      // Assert
+      // verify(() => mockRepository.delete('test-id')).called(1);
+    });
+  });
+}

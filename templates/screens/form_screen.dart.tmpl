@@ -1,0 +1,213 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Template per schermata form con validazione, loading, error handling.
+/// Personalizza: campi, provider, validazione, navigazione post-submit.
+///
+/// Complessità R29: Conta i campi × 2 + CTA 3 + sottotitoli. Max 15 punti.
+class __FEATURE_NAME__FormPage extends ConsumerStatefulWidget {
+  const __FEATURE_NAME__FormPage({super.key});
+
+  @override
+  ConsumerState<__FEATURE_NAME__FormPage> createState() => ___FEATURE_NAME__FormPageState();
+}
+
+class ___FEATURE_NAME__FormPageState extends ConsumerState<__FEATURE_NAME__FormPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _field1Controller = TextEditingController();
+  final _field2Controller = TextEditingController();
+  final _field1Focus = FocusNode();
+  final _field2Focus = FocusNode();
+
+  bool _isSubmitting = false;
+  bool _hasAttemptedSubmit = false;
+
+  @override
+  void dispose() {
+    _field1Controller.dispose();
+    _field2Controller.dispose();
+    _field1Focus.dispose();
+    _field2Focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return PopScope(
+      // R19/Cognitive Walkthrough: Confirm before losing unsaved data
+      canPop: !_hasUnsavedChanges(),
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldLeave = await _showDiscardDialog(context);
+        if (shouldLeave && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('__TITLE__'),
+        ),
+        // R31: Keyboard must not hide form fields
+        body: SafeArea(
+          child: GestureDetector(
+            // Dismiss keyboard on tap outside
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // --- FIELD 1 ---
+                    TextFormField(
+                      controller: _field1Controller,
+                      focusNode: _field1Focus,
+                      textInputAction: TextInputAction.next,
+                      keyboardType: TextInputType.text, // Adapt per field
+                      decoration: const InputDecoration(
+                        labelText: '__FIELD_1_LABEL__',
+                        hintText: '__FIELD_1_HINT__',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Questo campo è obbligatorio';
+                        }
+                        return null;
+                      },
+                      // Validate on change only after first submit attempt
+                      autovalidateMode: _hasAttemptedSubmit
+                          ? AutovalidateMode.onUserInteraction
+                          : AutovalidateMode.disabled,
+                      onFieldSubmitted: (_) {
+                        _field2Focus.requestFocus();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // --- FIELD 2 ---
+                    TextFormField(
+                      controller: _field2Controller,
+                      focusNode: _field2Focus,
+                      textInputAction: TextInputAction.done,
+                      keyboardType: TextInputType.text,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: '__FIELD_2_LABEL__',
+                        hintText: '__FIELD_2_HINT__',
+                      ),
+                      validator: (value) {
+                        // Optional field — remove this validator if not needed
+                        return null;
+                      },
+                      autovalidateMode: _hasAttemptedSubmit
+                          ? AutovalidateMode.onUserInteraction
+                          : AutovalidateMode.disabled,
+                      onFieldSubmitted: (_) => _submit(),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- SUBMIT BUTTON ---
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Salva'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _hasUnsavedChanges() {
+    return _field1Controller.text.isNotEmpty || _field2Controller.text.isNotEmpty;
+  }
+
+  Future<bool> _showDiscardDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modifiche non salvate'),
+        content: const Text('Hai delle modifiche non salvate. Vuoi uscire senza salvare?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Resta'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Esci'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> _submit() async {
+    setState(() => _hasAttemptedSubmit = true);
+
+    if (!_formKey.currentState!.validate()) {
+      // Haptic feedback on validation error
+      HapticFeedback.heavyImpact();
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      // TODO: Call your provider/notifier to save data
+      // await ref.read(__provider__.notifier).create(
+      //   field1: _field1Controller.text.trim(),
+      //   field2: _field2Controller.text.trim(),
+      // );
+
+      HapticFeedback.mediumImpact();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Salvato con successo!')),
+        );
+        Navigator.of(context).pop();
+        // Or: context.pop();
+      }
+    } catch (e) {
+      // Error: show message but PRESERVE form data (don't clear fields)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore nel salvataggio: ${_mapError(e)}'),
+            action: SnackBarAction(
+              label: 'Riprova',
+              onPressed: _submit,
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  String _mapError(Object error) {
+    // Map AppException to user-friendly message
+    return 'Si è verificato un errore. Riprova.';
+  }
+}

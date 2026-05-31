@@ -34,6 +34,24 @@ Before anything else, determine what to do and recover the context:
 5. **If `/forge status` was used**: Read and display all `.forge/` files as a formatted report, then stop
 6. **If `/forge setup` was used**: Run environment setup check (Step 0.5) only, then stop
 
+### Step 0.1 — Session Context Recovery
+Se `.forge/14_current_session.md` esiste:
+1. Leggi TUTTO il file
+2. Non ripetere errori già documentati in "Bug Incontrati e Risolti"
+3. Rispetta le decisioni già prese (non riproporle)
+4. Riparti dai "Prossimi Step"
+5. Leggi anche `.forge/13_instincts.md` se esiste — contiene pattern da non dimenticare
+
+### Step 0.2 — Forge State Integrity Check
+Dopo aver letto `.forge/00_forge_config.yaml`, verifica:
+1. `current_phase` è tra 1 e 6
+2. `current_phase_name` corrisponde a `current_phase`
+3. `phases_completed.phase_X` è `true` per ogni X < `current_phase`
+4. `state_management` non è vuoto se `current_phase` >= 4
+5. Se `05_milestones.md` esiste, ha almeno un milestone con task
+
+Se qualcosa non quadra → SEGNALA all'utente e proponi fix prima di continuare.
+
 ### Step 0.5 — Environment Setup Check
 
 Run these checks. Report results. Only install what's missing.
@@ -332,1042 +350,98 @@ Applica la *Denial of Wallet protection* al tuo stesso workflow:
 - Stima sempre se un'azione sta richiedendo troppi cicli o troppi tentativi (es. test fallisce 3 volte di fila). Se succede, **fermati** e chiedi un feedback o proponi di fare un fork in un branch/chat separata.
 - Scegli la strategia giusta per non sprecare token dell'utente su task che palesemente necessitano di un reset del contesto.
 
+### R29 — Screen Complexity Budget
+Ogni schermata ha un BUDGET di complessità. Superarlo significa che l'utente non capirà cosa fare.
+
+| Elemento | Costo |
+|----------|-------|
+| CTA primaria (FilledButton) | 3 punti |
+| CTA secondaria (OutlinedButton, TextButton) | 1 punto |
+| Campo di input (TextField) | 2 punti |
+| Lista scrollabile | 3 punti |
+| Tab/Segmented control | 2 punti |
+| Card con azioni | 2 punti |
+| Toggle/Switch | 1 punto |
+| Testo informativo | 0.5 punti |
+| Immagine/Illustrazione | 0.5 punti |
+
+**Budget massimo per tipo di schermata:**
+- **Schermata lista** (Home, Ricerca): max 10 punti
+- **Schermata dettaglio**: max 12 punti
+- **Schermata form** (Login, Registrazione, Creazione): max 15 punti
+- **Schermata impostazioni**: max 12 punti
+- **Dialog / Bottom Sheet**: max 8 punti
+
+Se superi il budget → DEVI spacchettare la schermata in:
+- Step multipli (wizard/stepper)
+- Sezioni collassabili
+- Schermate separate con navigazione
+
+**Esempio di violazione:** Una schermata "Crea Evento" con titolo, descrizione, data, ora, luogo (mappa), partecipanti, categoria, colore, promemoria, ripetizione, allegato foto = ~25 punti → TROPPO. **Fix**: Stepper a 3 step: Info base → Dettagli → Opzioni avanzate.
+
+### R30 — Permission Strategy (Mobile-First)
+
+**Regole inviolabili per i permessi di sistema:**
+
+1. **MAI chiedere permessi all'apertura dell'app.** L'utente non sa perché li chiedi e dirà "no".
+
+2. **Chiedi nel contesto d'uso (Just-in-Time):**
+   - Fotocamera → quando l'utente tap "Scatta foto"
+   - Posizione → quando l'utente tap "Trova vicino a me"
+   - Notifiche → DOPO che l'utente ha completato un'azione di valore (es. creato il primo elemento), mai al primo avvio
+
+3. **Pre-ask educativo PRIMA del dialog di sistema:** Mostra un bottom sheet o dialog custom che spiega:
+   - PERCHÉ serve il permesso (beneficio per l'utente, non motivo tecnico)
+   - Cosa succede se lo nega (funzionalità degradata, non blocco totale)
+   - Solo DOPO il pre-ask: lancia `permission_handler.request()`
+
+4. **Gestisci il "no" con grazia:**
+   - Se "denied" → mostra alternativa (es. inserisci indirizzo manualmente invece di geolocalizzazione)
+   - Se "permanently denied" → bottone "Apri Impostazioni" con istruzione chiara
+   - MAI loop infinito di richieste permesso
+   - MAI bloccare l'intera app per un permesso non critico
+
+5. **Dipendenza**: Usare SEMPRE il package `permission_handler` per gestire i permessi in modo cross-platform.
+
+### R31 — Device-Aware Design
+Ogni schermata DEVE funzionare su dispositivi reali, non solo su un emulatore ideale.
+
+1. **Safe Area SEMPRE**: Ogni Scaffold deve rispettare SafeArea o `MediaQuery.of(context).padding` per evitare che contenuto finisca sotto notch, Dynamic Island, barra di stato o barra navigazione a gesture.
+
+2. **Testo che va a capo**: MAI assumere che un testo stia su una riga.
+   - Usare `maxLines` + `overflow: TextOverflow.ellipsis` per titoli
+   - Usare `Flexible`/`Expanded` nei `Row`, mai width fisse per testo
+   - Testare mentalmente con una stringa molto lunga
+
+3. **Soft keyboard**: Quando appare la tastiera, il contenuto DEVE scrollare o ridimensionarsi. MAI `resizeToAvoidBottomInset: false` su schermate con form.
+
+4. **Scroll contenuto**: Ogni schermata il cui contenuto POTREBBE eccedere l'altezza dello schermo DEVE essere scrollabile (SingleChildScrollView per form/dettagli, CustomScrollView per layout complessi). MAI usare Column senza scroll in una schermata con più di 5 elementi.
+
+5. **Font scaling**: L'utente potrebbe avere testo al 200%. Il layout non deve rompersi.
+
+6. **Orientamento**: Se l'app supporta landscape, i form devono scrollare, le griglie devono adattare le colonne. Se NON supporti landscape: dichiaralo esplicitamente in AndroidManifest.xml e Info.plist.
+
 ---
 
 ## .forge/ STATE FILES FORMAT
 
-All state files are created in the `.forge/` directory at the project root.
-
-### `00_forge_config.yaml`
-```yaml
-# Flutter Forge Project Configuration
-# This file is the agent's memory — read it at every session start
-
-project_name: ""
-project_description: ""
-current_phase: 1                    # 1-6
-current_phase_name: "product_ideation"  # product_ideation | ux_flows | design_system | architecture | devops | legal_compliance
-current_milestone: ""               # "" | M1 | M2 | ...
-state_management: ""                # riverpod | bloc | (set in Phase 4)
-architecture: "feature_first_clean" # feature_first_clean
-navigation: "go_router"             # go_router | auto_route
-platforms:                          # set in Phase 1
-  android: true
-  ios: true
-  web: false
-  windows: false
-  macos: false
-  linux: false
-code_generation: true               # freezed, json_serializable, build_runner
-networking: "dio"                   # dio
-database: ""                        # drift | none | (set in Phase 4)
-auth_method: ""                     # jwt | firebase | supabase | none | (set in Phase 1/4)
-monetization: ""                    # free | freemium | subscription | ads | none
-last_updated: ""
-phases_completed:
-  phase_1: false
-  phase_2: false
-  phase_3: false
-  phase_4a: false
-  phase_4b: false
-  phase_5: false
-  phase_6: false
-```
-
-### `01_product_brief.md` (Phase 1 output)
-```markdown
-# Product Brief — [App Name]
-
-## Idea Core
-[Descrizione dell'idea come spiegata dall'utente]
-
-## Target Utente
-- Persona primaria: ...
-- Persona secondaria: ...
-- Pain point che risolviamo: ...
-
-## Analisi Competitiva
-| Competitor | Punti di forza | Punti deboli | Nostra differenziazione |
-|---|---|---|---|
-
-## Feature Set — MVP (Lancio)
-### Must Have (P0)
-- [ ] Feature 1: [descrizione dettagliata del comportamento]
-- [ ] Feature 2: ...
-
-### Should Have (P1)
-- [ ] Feature 3: ...
-
-### Nice to Have (P2)
-- [ ] Feature 4: ...
-
-## Roadmap Post-Lancio
-### v1.1 — [Nome release]
-- Feature avanzata 1
-### v2.0 — [Nome release]
-- Feature avanzata 2
-
-## Modello di Monetizzazione
-[Free / Freemium / Premium / Subscription / Ads / ...]
-[Strategia dettagliata: cosa è gratis, cosa è a pagamento, pricing]
-
-## Servizi Esterni & Costi
-| Servizio | Uso | Piano | Limiti Free Tier | Costo Upgrade |
-|---|---|---|---|---|
-| Supabase | DB + Auth | Free | 50K MAU, 500MB DB | $25/mo Pro |
-| ... | ... | ... | ... | ... |
-
-## Piattaforme Target
-- [ ] Android
-- [ ] iOS
-- [ ] Web
-- [ ] Windows / macOS / Linux
-
-## Decisioni Aperte
-[Domande irrisolte, punti da chiarire con l'utente]
-```
-
-### `02_ux_flows.md` (Phase 2 output)
-```markdown
-# UX & User Flows — [App Name]
-
-## Navigation Map
-[Mappa testuale con frecce di tutte le schermate e le transizioni]
-
-Splash → Onboarding (prima apertura) → Login/Register → Home
-Home → [Tab 1] → Detail → Edit
-Home → [Tab 2] → ...
-Home → Settings → Profile → ...
-
-## User Flows Critici
-
-### Flow 1: [Nome] (es. Onboarding)
-1. Utente apre app per la prima volta
-2. Splash screen (2s con logo animato)
-3. Onboarding: 3 schermate swipeable con illustrazioni
-4. → Bottone "Inizia" → Login/Register
-5. ...
-
-### Flow 2: [Nome] (es. Azione principale)
-...
-
-## Gestione Stati UI
-Per ogni schermata definire:
-- **Empty State**: cosa mostrare quando non ci sono dati
-- **Loading State**: skeleton loader / shimmer (MAI solo spinner)
-- **Error State**: messaggio user-friendly + bottone Riprova
-- **Data State**: contenuto reale
-
-## Regole UX
-- Pull-to-refresh su tutte le liste
-- Haptic feedback su azioni importanti (tap, swipe, success)
-- Skeleton loader invece di CircularProgressIndicator
-- Conferma prima di azioni distruttive (elimina, logout)
-- Snackbar per feedback azioni completate
-- Toast/Dialog per errori bloccanti
-- Transizioni pagina coerenti (fade per tab, slide per push)
-
-## Comportamento Offline
-- Quali schermate funzionano offline?
-- Come segnalare all'utente che è offline?
-- Caching strategy: quali dati persistiamo localmente?
-- Sync strategy: come sincronizziamo quando torna online?
-
-## Gestione Errori
-- Network error → Banner/Snackbar + Retry automatico con backoff
-- Server error (5xx) → Messaggio generico + Segnala problema
-- Validation error (4xx) → Messaggi specifici per campo
-- Auth error (401) → Redirect a login con messaggio
-- Timeout → Messaggio specifico + Retry
-```
-
-### `03_design_system.md` (Phase 3 output)
-```markdown
-# Design System — [App Name]
-
-## Tipografia
-- Font family: [Google Font scelto]
-- Headline Large: [size/weight/height]
-- Headline Medium: ...
-- Title Large: ...
-- Body Large: ...
-- Body Medium: ...
-- Label Large: ...
-
-## Palette Colori (WCAG AA)
-- Primary: #XXXXXX (nome)
-- On Primary: #XXXXXX
-- Secondary: #XXXXXX
-- On Secondary: #XXXXXX
-- Surface: #XXXXXX
-- On Surface: #XXXXXX
-- Error: #XXXXXX
-- Background: #XXXXXX
-- Success: #XXXXXX
-- Warning: #XXXXXX
-[Sia Light Theme che Dark Theme]
-
-## Spaziature (8pt Grid)
-- xs: 4
-- sm: 8
-- md: 16
-- lg: 24
-- xl: 32
-- xxl: 48
-
-## Border Radius
-- Piccolo: 8 (chip, badge)
-- Medio: 12 (card, input)
-- Grande: 16 (bottom sheet, dialog)
-- Circolare: 999 (avatar, FAB)
-
-## Elevazioni
-- Level 0: nessuna ombra
-- Level 1: card standard
-- Level 2: card evidenziata
-- Level 3: bottom sheet, dialog
-
-## Componenti Atomici
-### Buttons
-- Primary Button: [stile completo]
-- Secondary Button: ...
-- Text Button: ...
-- Icon Button: ...
-- FAB: ...
-
-### Inputs
-- TextField: [stile con focus, error, disabled states]
-- SearchBar: ...
-- Dropdown: ...
-
-### Cards
-- Standard Card: ...
-- Action Card: ...
-
-### Navigation
-- Bottom Navigation: [numero tab, icone, labels]
-- App Bar: [stile, azioni]
-
-### Feedback
-- SnackBar: [stile success, error, info]
-- Dialog: [stile confirm, alert]
-- Bottom Sheet: [stile modale, persistent]
-
-## Micro-Animazioni
-- Transizione pagina: [tipo, durata, curva]
-- Bottone tap: [effetto, durata]
-- Lista item appear: [staggered, durata]
-- Stato loading → data: [crossfade, durata]
-
-## Icone
-- Set: Material Icons / Lucide / HeroIcons / custom
-- Stile: outlined / filled / rounded
-
-## Pattern Mobile Scelti
-- [✓/✗] Bottom Navigation Bar
-- [✓/✗] Tab Bar
-- [✓/✗] Drawer
-- [✓/✗] FAB
-- [✓/✗] Swipe actions su liste
-- [✓/✗] Pull-to-refresh
-- [✓/✗] Bottom Sheet modale
-- [✓/✗] Search bar persistente
-```
-
-### `04_architecture.md` (Phase 4A output)
-```markdown
-# Architettura — [App Name]
-
-## Stack Tecnologico
-- Flutter: [versione]
-- Dart: [versione]
-- State Management: Riverpod / BLoC
-- Navigation: GoRouter
-- Networking: Dio
-- Database locale: Drift / Hive / nessuno
-- Code Generation: freezed + json_serializable + build_runner
-- DI: tramite Riverpod providers / GetIt
-
-## Struttura Progetto
-```
-lib/
-├── main.dart
-├── app.dart
-├── bootstrap.dart
-├── core/
-│   ├── constants/
-│   ├── env/
-│   ├── errors/
-│   ├── extensions/
-│   ├── network/
-│   ├── router/
-│   ├── theme/
-│   └── utils/
-├── features/
-│   ├── feature_a/
-│   │   ├── data/
-│   │   │   ├── datasources/
-│   │   │   └── repositories/
-│   │   ├── domain/
-│   │   │   ├── models/
-│   │   │   └── repositories/
-│   │   └── presentation/
-│   │       ├── pages/
-│   │       ├── widgets/
-│   │       └── providers/ (o blocs/)
-│   └── feature_b/
-│       └── ...
-└── shared/
-    ├── widgets/
-    ├── models/
-    └── utils/
-```
-
-## Dipendenze (pubspec.yaml)
-- [list here]
-
-## Enterprise Setup
-- **Crash Reporting**: [e.g., Sentry / Firebase Crashlytics]
-- **Analytics**: [e.g., PostHog / Firebase Analytics]
-- **Localization**: [e.g., intl (ARB files) / easy_localization]
-- **Deep Linking**: [e.g., configurato su GoRouter e applinks]
-[Lista completa con versioni specifiche]
-
-## Mappa Feature → Schermate → Provider/BLoC
-[Tabella che mappa ogni feature alle sue schermate e ai provider/bloc associati]
-
-## Strategia di Error Handling
-[Come gestiamo errori: Result type, AppException, ecc.]
-
-## Strategia di Caching
-[Cosa cacchiamo, per quanto, come invalidiamo]
-```
-
-### `05_milestones.md` (Phase 4B tracking)
-```markdown
-# Milestones — [App Name]
-
-## M1 — Foundation & Core ([stato])
-- [x] Inizializzazione progetto Flutter
-- [x] Setup core/ (theme, router, networking)
-- [/] Setup navigazione base con GoRouter
-- [ ] Setup Dio client con interceptors
-- [ ] ...
-
-## M2 — [Nome Milestone] ([stato])
-- [ ] Task 1: [descrizione specifica]
-- [ ] Task 2: ...
-
-## M3 — [Nome Milestone] ([stato])
-...
-```
-
-### `06_tech_debt.md`
-```markdown
-# Technical Debt Register — [App Name]
-
-## Active Debt
-
-### TD-001 — [Titolo] (P1/P2/P3)
-- **Cosa**: [Descrizione del debito]
-- **Perché**: [Perché è stato incorso]
-- **Risoluzione**: [Come risolverlo]
-- **Impatto**: [Cosa succede se non lo risolviamo]
-- **Creato**: [data]
-
-## Resolved Debt
-[Debiti risolti con data di risoluzione]
-
-## Future Considerations
-[Idee proposte ma non approvate dall'utente — da riconsiderare]
-```
-
-### `07_changelog.md`
-```markdown
-# Changelog — [App Name]
-
-All notable changes to this project will be documented in this file.
-Format based on [Keep a Changelog](https://keepachangelog.com/).
-Versioning follows [Semantic Versioning](https://semver.org/).
-
-## [Unreleased]
-### Added
-- ...
-### Changed
-- ...
-### Fixed
-- ...
-
-## [0.1.0] — [data] — M1 Foundation
-### Added
-- Initial project setup
-- Core architecture (theme, router, networking)
-- Environment configuration (dev, staging, prod)
-```
-
-### `08_release_checklist.md` (Phase 5 output)
-```markdown
-# Release Checklist — [App Name]
-
-## Pre-Release (Technical & UX Audit)
-- [ ] flutter analyze --fatal-infos → 0 issues
-- [ ] flutter test → all passing
-- [ ] flutter test --coverage → >80%
-- [ ] **UX Audit**: Tutte le schermate hanno senso? Le card e le liste sono interattive? Le navigazioni funzionano senza bloccare l'utente?
-- [ ] **UI Audit**: Non ci sono elementi palesemente "prototipali" o segnaposto? Copy curato e non banale?
-- [ ] **Database Audit**: Lo schema remoto (es. tabelle Supabase) è stato fisicamente creato e allineato col DB locale? Il sync funziona?
-- [ ] Manual QA su Android (device reale o emulatore)
-- [ ] Manual QA su iOS (simulator o device)
-- [ ] Performance profiling (60fps, no jank)
-- [ ] Accessibilità base verificata
-- [ ] Security audit completato (no API keys in chiaro, obfuscation attivo)
-
-## Legal & Compliance
-- [ ] Privacy Policy pubblicata e linkata in app
-- [ ] Termini e Condizioni pubblicati e linkati in app
-- [ ] Consenso GDPR implementato (opt-in, diritto cancellazione)
-- [ ] Third-Party Register completo (`docs/legal/third_party_register.md`)
-- [ ] Licenze open-source esposte in-app (sezione "Licenze" in Settings)
-
-## Store Assets
-- [ ] App icon (1024x1024 per iOS, adaptive per Android)
-- [ ] Splash screen
-- [ ] Screenshot per store (phone + tablet se supportato)
-- [ ] Descrizione app (breve + lunga)
-- [ ] Privacy policy URL
-- [ ] Categoria store
-
-## Build & Deploy
-- [ ] Flavors configurati (dev, staging, prod)
-- [ ] Variabili ambiente protette (dart-define-from-file)
-- [ ] Signing configurato (keystore Android, provisioning iOS)
-- [ ] CI/CD pipeline funzionante
-- [ ] Build release testato
-```
-
-### `09_business_plan.md` (Phase 1 output)
-```markdown
-# Business Plan — [App Name]
-
-## Modello di Monetizzazione
-- Strategia scelta: [Free / Freemium / Subscription / Ads]
-- Cosa è gratis: [...]
-- Cosa è a pagamento (se applicabile): [...]
-- Pricing (se applicabile): [...]
-- Motivazione: [...]
-
-## Servizi Esterni — Analisi Costi
-| Servizio | Scopo | Piano Scelto | Limiti Free Tier | Costo Upgrade | Note |
-|---|---|---|---|---|---|
-| [es. Supabase] | Auth + DB | Free | 50K MAU, 500MB | $25/mo Pro | Sufficiente per MVP |
-| [es. Sentry] | Crash reporting | Free | 5K events/mo | $26/mo | OK fino a ~1000 DAU |
-
-## Scalabilità Stimata (Free Tier)
-- Utenti concorrenti stimati: [...]
-- API calls/mese: [...]
-- Storage disponibile: [...]
-- Quando sarà necessario upgradare: [...]
-
-## Piano di Marketing
-### Pre-Lancio
-- Landing page / social media presence
-- Beta testing (TestFlight / Play Console Internal Track)
-- Contenuti: [...]
-
-### Lancio
-- ASO (App Store Optimization): keywords, screenshots, descrizione
-- Canali: [social, community, influencer, PR]
-- Budget: [€0 / €X]
-
-### Post-Lancio
-- Retention strategy: [notifiche push, email, engagement loops]
-- Metriche chiave da monitorare: [DAU, MAU, retention D1/D7/D30, churn]
-- Roadmap feedback loop: come raccogliere e prioritizzare feedback utenti
-```
-
-### `10_scalability.md` (Phase 4A output)
-```markdown
-# Scalability Report — [App Name]
-
-## Limiti Attuali (Free Tier)
-| Risorsa | Servizio | Limite | Impatto al raggiungimento |
-|---|---|---|---|
-| Database rows | [Supabase] | 500MB | App non può salvare nuovi dati |
-| Auth users | [Supabase] | 50K MAU | Nuovi utenti non possono registrarsi |
-| API calls | [Servizio X] | Y/mese | Funzionalità Z smette di funzionare |
-| Storage | [Servizio Y] | Z GB | Upload immagini bloccato |
-
-## Strategia di Crescita
-- **Fase 1 (0-1K utenti)**: Free tier, monitoraggio metriche
-- **Fase 2 (1K-10K utenti)**: Valutare upgrade a piano Pro, ottimizzare query
-- **Fase 3 (10K+ utenti)**: Implementare caching aggressivo, CDN, pagination server-side
-
-## Pattern di Scalabilità Implementati
-- [ ] Pagination su tutte le liste
-- [ ] Caching con invalidazione
-- [ ] Lazy loading immagini
-- [ ] Debounce su ricerca
-- [ ] Compressione immagini prima dell'upload
-- [ ] Nessun valore hardcoded (tutto da config)
-```
-
-### `11_asset_manifest.md` (Phase 3 output)
-```markdown
-# Asset Manifest — [App Name]
-
-## App Icon
-| Asset | Dimensions | Format | Status | Note |
-|---|---|---|---|---|
-| app_icon | 1024x1024 | PNG | [ ] | Adaptive (Android) + iOS |
-| app_icon_foreground | 1024x1024 | PNG | [ ] | Android adaptive foreground |
-
-## Splash Screen
-| Asset | Type | Format | Status | Note |
-|---|---|---|---|---|
-| splash_logo | Image / Lottie | PNG/JSON | [ ] | Centered logo |
-| splash_background | Color / Gradient | — | [ ] | From design system |
-
-## Onboarding Illustrations
-| Screen | Asset Name | Description | Status |
-|---|---|---|---|
-| Onboarding 1 | onboarding_1 | [Descrizione scena] | [ ] |
-| Onboarding 2 | onboarding_2 | [Descrizione scena] | [ ] |
-| Onboarding 3 | onboarding_3 | [Descrizione scena] | [ ] |
-
-## Empty State Illustrations
-| Screen | Asset Name | Description | Status |
-|---|---|---|---|
-| [Screen name] | empty_[name] | [Descrizione] | [ ] |
-
-## Lottie Animations (if applicable)
-| Name | Purpose | Duration | Loop | Status |
-|---|---|---|---|---|
-| loading_spinner | Global loading | 2s | Yes | [ ] |
-| success_check | Action completed | 1.5s | No | [ ] |
-
-## Sound Effects (if applicable)
-| Name | Trigger | License | Source | Status |
-|---|---|---|---|---|
-| [sound_name] | [when played] | CC0 | [source URL] | [ ] |
-
-## Fonts
-| Font Family | Weights | Source | License |
-|---|---|---|---|
-| [e.g., Inter] | 400, 500, 600, 700 | Google Fonts | OFL |
-```
-
-### `13_instincts.md` (Continuous Learning)
-```markdown
-# Instincts & Learned Patterns
-
-## Pattern 1: [Nome breve]
-- **Trigger**: Quando si usa/si fa [X]
-- **Errore Comune**: [Cosa andava storto]
-- **Soluzione**: [Come fare correttamente]
-```
-
-### `14_current_session.md` (Session Checkpoint)
-```markdown
-# Session Checkpoint
-- **Fase/Milestone Corrente**: [Fase X, Milestone Y]
-- **Cosa funziona**: [Fattualità confermata]
-- **Cosa non ha funzionato**: [Approcci falliti da non ripetere]
-- **Prossimi step immediati**: [Da dove riprendere]
-```
+I formati dettagliati dei file di stato `.forge/` sono stati estratti in `[state-formats/state_files_format.md](state-formats/state_files_format.md)`. Leggi questo file quando hai bisogno di conoscere la struttura esatta di un file di stato o quando devi crearne uno nuovo.
 
 ---
 
-## PHASE 1 — PRODUCT IDEATION & FEATURE ENHANCEMENT
-
-> You are the **Product Manager**. Your goal: understand the idea deeply, enhance it, define a professional MVP.
-
-### Instructions
-
-1. **Receive the idea** from the user
-2. **Ask clarifying questions** — at minimum cover:
-   - Chi è l'utente target? (età, tech-savviness, bisogni)
-   - Qual è il problema principale che risolve?
-   - Esistono competitor? Cosa fanno bene/male?
-   - Su quali piattaforme deve funzionare? (Android, iOS, Web)
-   - Serve autenticazione utente? Che tipo?
-   - I dati sono locali, su server, o entrambi?
-   - C'è un modello di monetizzazione in mente?
-   - L'app deve funzionare offline?
-   - Ci sono integrazioni esterne (API, social, pagamenti)?
-
-3. **Propose enhancements** — Think about:
-   - Feature che l'utente non ha menzionato ma che renderebbero l'app più completa
-   - Pattern di engagement (notifiche, streak, gamification)
-   - Funzionalità di accessibilità
-   - Onboarding per nuovi utenti
-   - Impostazioni e personalizzazione
-   - Feature social (se pertinente)
-   - **(Novità)** Consiglia all'utente di digitare il comando nativo `/grill-me` se preferisce farsi intervistare da te in modo interattivo per far emergere i requisiti senza doverli scrivere tutti in una volta.
-
-4. **Define MVP** — Separate clearly:
-   - **P0 (Must Have)**: Il minimo per un'app PROFESSIONALE (non un prototipo)
-   - **P1 (Should Have)**: Feature importanti per il lancio
-   - **P2 (Nice to Have)**: Feature che possono aspettare v1.1
-   - Include sempre: onboarding, settings, error handling, loading states
-
-5. **Business & Service Planning** (Rule R15):
-   - Identify ALL external services needed (auth, DB, storage, analytics, crash reporting).
-   - For EACH service: find the **best free option**, document its limits, and note the paid alternative.
-   - Ask the user: *"Per [servizio X] propongo [opzione gratuita] che ha questi limiti: [...]. Vuoi usare un'alternativa a pagamento come [Y] oppure restiamo sul free tier?"*
-   - Define monetization strategy (if applicable): is the app free, freemium, subscription, ad-supported?
-   - Write `.forge/09_business_plan.md`.
-
-6. **Write `.forge/01_product_brief.md`** following the format above
-7. **Initialize `.forge/00_forge_config.yaml`** with project info
-8. **Present summary to user** and **STOP — wait for approval**
-
-### Creative Probing Questions
-Go beyond basic requirements. Ask about:
-- "Come immagini la prima cosa che l'utente vede aprendo l'app?"
-- "Qual è l'azione che l'utente farà PIÙ spesso? Come possiamo renderla il più veloce possibile?"
-- "C'è un momento 'wow' che vuoi che l'utente provi?"
-- "Cosa dovrebbe succedere quando l'utente non ha ancora nessun dato?"
-- "L'utente dovrà mai condividere qualcosa con altri?"
-
----
-
-## PHASE 2 — UX & USER FLOWS
-
-> You are the **Senior UX Designer**. Your goal: map every interaction before writing a single line of code, ensuring absolutely no screen or edge case is forgotten.
-
-### Prerequisites
-- Read `.forge/01_product_brief.md` for features and target user
-
-### Instructions
-
-1. **Discover Missing Screens**
-   Before mapping, actively think: "What screens are we forgetting?"
-   - Is there a settings screen? Profile edit?
-   - Password reset flow?
-   - Empty states for every list?
-   - Success screens after critical actions?
-   - Ask the user: *"Ho individuato queste schermate principali... ma credo manchino X, Y e Z. Sei d'accordo ad aggiungerle?"*
-
-2. **Map the Navigation Flow**
-   Use text-based flow diagrams:
-   ```
-   App Launch
-   ├── [First Launch] → Splash → Onboarding (3 screens) → Auth
-   │   ├── Login → Home
-   │   └── Register → Verification → Home
-   └── [Returning User] → Splash → Home
-
-   Home (Bottom Nav)
-   ├── Tab 1: [Nome] → List → Detail → Edit
-   ├── Tab 2: [Nome] → ...
-   ├── Tab 3: [Nome] → ...
-   └── Tab 4: Settings → Profile | Notifications | Theme | About | Logout
-   ```
-
-3. **Detailed Screen-by-Screen Description**
-   For EVERY screen in the navigation map, describe exactly what it contains:
-   - **Header/App Bar**: Title, actions (search, filter, save)
-   - **Main Content**: List, form, details? What exact fields/data?
-   - **Bottom/FAB**: Primary action button?
-   - **States**: 
-     - *Empty state*: custom illustration + message + CTA
-     - *Loading state*: custom skeleton layout specific to this screen
-     - *Error state*: user-friendly message + retry button
-     - *Data state*: normal layout
-     - *Partial state* (if applicable): some data loaded, some loading
-
-4. **Define Critical User Flows** — For each:
-   - Step-by-step user actions
-   - Error paths (what if X fails?)
-   - Edge cases (slow network, no permission)
-
-5. **Define UX Rules & Offline Strategy**:
-   - Pull-to-refresh, haptic feedback triggers, confirmation dialogs, undo patterns (Snackbar).
-   - Which screens work fully offline? How is it indicated?
-   - Caching and Sync strategy: optimistic updates vs wait for server.
-
-6. **Define Error Handling UX**:
-   - Network errors → Banner/Snackbar + Retry
-   - Validation errors → inline or summary
-   - Auth errors → redirect or dialog
-   - Timeout → retry automatically
-
-7. **Push Notifications Strategy** (if applicable):
-   - Which events trigger push notifications? (e.g., new message, reminder, promo)
-   - Notification channels/categories (Android) and grouping strategy
-   - When to ask for notification permission (not at first launch — after demonstrating value)
-   - Local notifications (e.g., reminders, timers) vs remote push (e.g., new content, social)
-   - Notification copy: compelling, actionable text (Rule R18)
-   - Deep link target for each notification type
-
-8. **Analytics Event Mapping**:
-   - Define key user actions to track: screen views, button taps, feature usage, errors
-   - Map each event to a name and properties: `event_name(property1, property2)`
-   - Define conversion funnel: onboarding → registration → first action → retention
-   - This feeds directly into the marketing plan in `.forge/09_business_plan.md`
-
-9. **Write `.forge/02_ux_flows.md`** following the format
-10. **Update `.forge/00_forge_config.yaml`** → `current_phase: 2`
-11. **Present summary** and **ASK FOR FEEDBACK**: *"Questa è la struttura dettagliata di ogni schermata. Manca qualcosa? C'è qualche interazione che vorresti diversa o qualche schermata edge-case che ho dimenticato?"*
-12. **STOP — wait for approval**
-
----
-
-## PHASE 3 — UI DESIGN SYSTEM & MOBILE PATTERNS
-
-> You are the **Senior UI Designer**. Your goal: create a cohesive, highly accessible, premium, and beautiful design system that wows the user.
-
-### Prerequisites
-- Read `.forge/01_product_brief.md` for brand/tone
-- Read `.forge/02_ux_flows.md` for screens and interactions
-- Read `references/ui_design_system.md` for Flutter design system patterns
-
-### Instructions
-
-1. **Push the Boundaries of UI Design**
-   Don't settle for basic Material defaults. Propose a modern, premium aesthetic:
-   - Modern typography (e.g., Inter, Outfit, Plus Jakarta Sans)
-   - Refined color palettes (avoid generic pure colors, use curated HSL tailored colors)
-   - Subtle shadows, glassmorphism, or sleek dark mode variations
-   - Ask the user: *"Per il look & feel, propongo uno stile [moderno/minimale/premium] con font X e palette Y. Vuoi che generi un'immagine di mockup per darti un'idea visiva?"*
-
-2. **Typography & Color Palette (WCAG AA)**
-   - Define the complete type scale (headline, title, body, label).
-   - Design for BOTH Light and Dark theme.
-   - Ensure WCAG AA contrast ratios (4.5:1 for text).
-   - Define: primary, secondary, tertiary, surface, background, error, success, warning, and "on" colors for each.
-
-3. **Spacing, Grid & Border Radius**
-   - Use 8pt grid system (xs=4, sm=8, md=16, lg=24, xl=32, xxl=48).
-   - Define standard padding and spacing.
-   - Define Border Radius consistently (small=8, medium=12, large=16, circle=999).
-   - Elevazioni: Level 0 (flat), Level 1 (card), Level 2 (highlighted), Level 3 (bottom sheet).
-
-4. **Components Design**
-   Design each component conceptually for maximum usability:
-   - Buttons (primary, secondary, text, FAB) with states (default, pressed, disabled, loading).
-   - Text inputs with states (default, focused, error, disabled) and clear hints.
-   - Cards (standard, action).
-   - Lists (swipeable, leading/trailing).
-   - Bottom sheets, Dialogs, Navigation elements, Snackbars.
-
-5. **Micro-Animations & Feedback**
-   A premium app feels alive. Define:
-   - Page transitions (fade, slide, iOS style).
-   - Tap feedback (scale down slightly, ripple).
-   - List item appearance (staggered fade-in).
-   - State transitions (loading → data crossfade).
-   - Pull-to-refresh animation style.
-
-6. **Mobile Patterns**
-   Decide which patterns to use based on the app type:
-   - Bottom Navigation vs Drawer vs Tab Bar
-   - FAB placement and behavior
-   - Swipe gestures on list items
-   - Search: in app bar vs dedicated screen
-   - Detail view: push vs bottom sheet
-
-7. **Assets & Branding Plan** (Rule R17)
-   Identify ALL visual and audio assets the app needs:
-   - **App Icon**: Concept, style, colors. Use `generate_image` to create a draft.
-   - **Splash Screen**: Logo animation or static? Lottie or native?
-   - **Onboarding Illustrations**: How many screens? What does each illustrate?
-   - **Empty State Illustrations**: One per list/collection screen.
-   - **In-App Icons**: Which icon set? (Material Symbols, Lucide, custom?)
-   - **Sound Effects** (if applicable): Success chime, error buzz, notification sound.
-   - **Lottie Animations** (if applicable): Loading, success, celebration.
-   - Write `.forge/11_asset_manifest.md` cataloguing every asset needed.
-   - Ask user: *"Ecco tutti gli asset grafici e sonori che servono. Hai già un logo o preferisci che ne generi uno? Ci sono animazioni particolari che vorresti?"*
-
-8. **Write `.forge/03_design_system.md`** following the format
-9. **Update `.forge/00_forge_config.yaml`** → `current_phase: 3`
-10. **Present summary** and **ASK FOR FEEDBACK**: *"Come ti sembra questa estetica? Ho pensato a tutti i componenti e asset necessari. C'è qualche elemento visivo o animazione particolare che vorresti aggiungere?"*
-11. **STOP — wait for approval**
-
----
-
-## PHASE 4A — ARCHITECTURE PLANNING
-
-> You are the **Lead Software Architect**. Your goal: design the technical foundation before writing code.
-
-### Prerequisites
-- Read ALL `.forge/` files (01, 02, 03) for full context
-- Read `references/architecture.md` for architectural patterns
-- Read `references/state_management.md` for state management options
-- Read `references/conventions.md` for coding standards
-
-### Instructions
-
-1. **Choose State Management**
-   Ask the user their preference (if not already decided):
-   - **Riverpod** (recommended): Modern, type-safe, testable, code-gen support
-   - **BLoC/Cubit**: Battle-tested, great for large teams, stream-based
-   Present pros/cons for the specific app and recommend one with reasoning.
-
-2. **Define Project Structure**
-   Map every feature from the product brief to a feature folder:
-   ```
-   lib/features/
-   ├── auth/           # Login, Register, Password reset
-   ├── onboarding/     # First-time user experience
-   ├── home/           # Main dashboard/home
-   ├── [feature_a]/    # ...
-   ├── [feature_b]/    # ...
-   ├── settings/       # App settings, profile, preferences
-   └── ...
-   ```
-
-3. **Define Dependencies & Enterprise Setup**
-   List ALL packages with specific versions for pubspec.yaml:
-   - State management (flutter_riverpod + riverpod_generator OR flutter_bloc)
-   - Navigation & Deep Linking (go_router, app_links)
-   - Networking (dio, connectivity_plus)
-   - Serialization (freezed_annotation, json_annotation)
-   - Local storage (flutter_secure_storage, drift/hive)
-   - Observability & Analytics (sentry_flutter OR firebase_crashlytics, firebase_analytics OR posthog_flutter)
-   - Localization (intl, flutter_localizations)
-   - UI & Utils (shimmer, intl, path_provider, etc.)
-   - Testing (mocktail)
-
-4. **Map Feature → Screens → State**
-   Create a table:
-   | Feature | Screen | State Manager | Data Source |
-   |---|---|---|---|
-   | auth | LoginPage | AuthNotifier/AuthBloc | AuthRepository → API |
-   | auth | RegisterPage | AuthNotifier/AuthBloc | AuthRepository → API |
-   | home | HomePage | HomeNotifier/HomeBloc | Multiple repos |
-   | ... | ... | ... | ... |
-
-5. **Define Error Handling Architecture**
-   - `AppException` sealed class hierarchy
-   - How exceptions map to user-friendly messages
-   - Where exceptions are caught (repository? provider/bloc? UI?)
-
-6. **Define Networking Architecture**
-   - Base URL configuration per flavor
-   - Dio interceptors: auth, logging, error mapping, retry
-   - Request/Response models
-
-7. **Create Milestone Plan**
-   Break implementation into **ordered milestones**:
-   - **M1 — Foundation**: Project init, core setup (theme, router, dio, env)
-   - **M2 — Auth** (if needed): Login, register, token management
-   - **M3-MN — Features**: One milestone per major feature, ordered by dependency
-   - **M(N+1) — Polish**: Animations, edge cases, empty states
-   - **M(N+2) — Testing**: Unit tests, widget tests
-   - **M(N+3) — DevOps**: Flavors, CI/CD, store prep
-   - **M(N+4) — Legal & Compliance**: Privacy Policy, T&C, GDPR consent, third-party register
-
-   Each milestone must have **specific, detailed tasks** (see Rule R5).
-
-8. **Scalability Analysis** (Rule R16)
-   - Review ALL external services from `.forge/09_business_plan.md`
-   - Document exact limits for each service tier in `.forge/10_scalability.md`
-   - Identify bottlenecks: which limit will be hit first?
-   - Propose pagination, caching, and lazy-loading strategies
-   - Ensure NO hardcoded values in the architecture (all from env config)
-
-9. **Write `.forge/04_architecture.md`** following the format
-10. **Write `.forge/05_milestones.md`** with all milestones and tasks (all `[ ]`)
-11. **Write `.forge/10_scalability.md`** with scalability analysis
-12. **Update `.forge/00_forge_config.yaml`** → `current_phase: 4`, set `state_management`, `database`, etc.
-13. **Present summary** and **STOP — wait for approval**
-
----
-
-## PHASE 4B — IMPLEMENTATION
-
-> You are the **Full Development Team**. Your goal: build the app milestone by milestone.
-
-### Prerequisites
-- Read ALL `.forge/` files for full context
-- Read relevant `references/` files as needed during implementation
-- Use `templates/` as starting points for new files
-
-### Milestone Execution Loop (Continuous PR / Goal Loop)
-
-**Tip for users**: Suggerisci all'utente di usare il comando `/goal` di Antigravity se vuole che tu esegua questa intera milestone in totale autonomia, lasciandoti lavorare in background per completare tutti i task di fila.
-
-For each milestone in `.forge/05_milestones.md` (o `task.md` nativo se supportato):
-
-1. **Announce**: "Inizio Milestone MX — [Nome]"
-2. **Mark milestone as in progress** in `05_milestones.md` (o `task.md`) (`[/]`)
-3. **For each task in the milestone**:
-   a. **Preflight Search (R25)**: Prima di scrivere logica core, effettua una ricerca (search-first) per evitare codice custom se esiste una libreria.
-   b. Mark task as in progress (`[/]`)
-   c. **TDD Micro-Commits (R27)**: Crea/modifica i file applicando il ciclo TDD (Red, Green, Refactor). Effettua un micro-commit per ogni step funzionale. Usa i *Background Tasks* (`manage_task`) per eseguire `flutter test` mentre continui a preparare il commit successivo.
-   d. Follow coding conventions and architecture.
-   e. **De-sloppify Pass (R27)**: Pulisci il codice da boilerplate e test ridondanti.
-   f. Mark task as completed (`[x]`)
-   g. Update `07_changelog.md`
-4. **After completing all tasks**:
-   - Run `flutter analyze` — fix any issues
-   - Run `flutter test` — fix any failures
-   - Mark milestone as completed in `05_milestones.md`
-   - Git commit: `feat(milestone): complete MX — [Nome]`
-5. **Present milestone summary to user**: what was built, any decisions made, any questions
-6. **STOP — wait for user approval before next milestone**
-
-### Implementation Guidelines
-
-#### When creating a new feature:
-1. Read `references/architecture.md` for folder structure
-2. Start from `templates/feature/` templates
-3. Create files in this order:
-   - Models (domain/models/) → run `build_runner`
-   - Repository interface (domain/repositories/)
-   - Data source (data/datasources/)
-   - Repository implementation (data/repositories/)
-   - Provider/BLoC (presentation/providers/ or presentation/blocs/)
-   - UI pages (presentation/pages/)
-   - UI widgets (presentation/widgets/)
-4. Register routes in `app_router.dart`
-5. Wire up dependencies (providers or DI)
-
-#### When creating a new screen:
-1. Read `references/ux_patterns.md` for state handling
-2. Implement ALL states: loading, error, empty, data
-3. Use Design System components from `03_design_system.md`
-4. Add skeleton loaders (never bare CircularProgressIndicator alone)
-5. Add haptic feedback on primary actions
-6. Add pull-to-refresh if it's a list
-7. Handle keyboard (dismiss on scroll, next field focus)
-8. Implement responsive padding
-
-#### When creating models:
-1. Use `@freezed` annotation
-2. Include `fromJson`/`toJson` factory
-3. Define all fields with correct nullability
-4. Add `@Default` values where appropriate
-5. Run `dart run build_runner build --delete-conflicting-outputs`
-
-#### When creating networking:
-1. Read `references/networking.md`
-2. Define request/response DTOs
-3. Map server errors to `AppException` types
-4. Handle timeout, connection error, server error
-5. Add retry logic for transient failures
-
----
-
-## PHASE 5 — FLAVORS, DEVOPS & STORE READY
-
-> You are the **DevOps Engineer**. Your goal: prepare the app for production deployment.
-
-### Prerequisites
-- Read `references/flavors_and_envs.md`
-- Read `references/cicd.md`
-- Use `templates/config/` and `templates/cicd/` as starting points
-
-### Instructions
-
-1. **Configure 3 Flavors**: dev, staging, prod
-   - Use `--dart-define-from-file` with JSON env files
-   - Different API base URLs per flavor
-   - Different app names (e.g., "MyApp Dev", "MyApp Staging", "MyApp")
-   - Different bundle IDs (com.example.myapp.dev, .staging, .prod)
-
-2. **Environment Configuration**:
-   - Create `env/dev.json`, `env/staging.json`, `env/prod.json`
-   - Create `EnvConfig` class that reads from dart defines
-   - Add env files to `.gitignore` (sensitive data)
-   - Create `env/dev.json.example` for documentation
-
-3. **CI/CD Pipeline** (GitHub Actions):
-   - `ci.yml`: On PR → analyze, test, format check
-   - `deploy.yml`: On tag → build + deploy to stores
-   - Include caching for Flutter SDK and pub packages
-
-4. **Fastlane** (if iOS/Android):
-   - iOS: TestFlight deployment lane
-   - Android: Google Play internal track deployment lane
-   - Match for iOS signing (if applicable)
-
-5. **App Assets & Branding**:
-   - Generate final app icon using `generate_image` (1024x1024) and configure:
-     - Adaptive icon for Android (foreground + background layers)
-     - App icon for iOS
-   - Configure splash screen (flutter_native_splash or flutter_launcher_icons)
-   - Generate all onboarding and empty state illustrations (from `.forge/11_asset_manifest.md`)
-   - Configure app name per flavor
-   - Implement sound effects if defined in asset manifest
-
-6. **App Store Optimization (ASO) & Copywriting** (Rule R18):
-   - Write compelling **store title** (max 30 chars) with primary keyword
-   - Write **subtitle/short description** (max 80 chars) — benefit-focused
-   - Write **full description** (4000 chars max) — structured with features, benefits, social proof
-   - Research and define **keywords** (iOS: 100 chars keyword field)
-   - Define **store category** and **content rating**
-   - Generate **store screenshots** descriptions (what each screenshot should show)
-   - Write all copy in Italian + English (if multi-language)
-   - Save in `docs/store/aso_listing.md`
-
-7. **Release Checklist, Red-Team Audit & Automation**:
-   - Consiglia all'utente l'uso dello slash command `/schedule` se vuole impostare build e test end-to-end ricorrenti (es. ogni notte).
-   - Write `.forge/08_release_checklist.md`
-   - Run through checklist items (Test, Coverage > 80%, Performance).
-   - **Adversarial Security Audit (Red-Team)**: Simula di essere un attaccante (stile AgentShield). Cerca attivamente injection attack, analizza se le regole RLS di Supabase sono bypassabili, assicurati che i permessi siano al minimo. Non limitarti a una checklist statica: scrivi veri e propri tentativi di breach nei test se necessario. Verify no API keys are hardcoded. Ensure obfuscation is enabled.
-   - Generate release build for testing (`flutter build apk/ipa --release`).
-
-8. **Update state files** and **present summary**
-9. **STOP — wait for approval before Phase 6**
-
----
-
-## PHASE 6 — LEGAL, COMPLIANCE & DOCUMENTATION
-
-> You are the **Legal & Compliance Advisor**. Your goal: ensure the app is legally compliant for release in Italy/EU.
-
-### Prerequisites
-- Read ALL `.forge/` files for full project context
-- Read `references/security.md` for security practices
-- Identify all third-party services, SDKs, and APIs used in the project
-
-### Instructions
-
-1. **Third-Party Register**
-   For EVERY external dependency (SDK, API, service), document in `docs/legal/third_party_register.md`:
-   - Name and version
-   - License type (MIT, Apache 2.0, BSD, proprietary, etc.)
-   - What personal data it processes (if any)
-   - Data residency (EU, US, etc.)
-   - GDPR compliance status
-   - Developer obligations (attribution, restrictions, etc.)
-   - Link to official terms/privacy policy
-
-2. **Privacy Policy** (`docs/legal/privacy_policy.md`)
-   Generate a GDPR-compliant privacy policy (Italian) covering:
-   - Titolare del trattamento (developer/company info — ask user)
-   - Dati raccolti e finalità
-   - Base giuridica del trattamento
-   - Terze parti e trasferimenti extra-UE
-   - Periodo di conservazione
-   - Diritti dell'interessato (accesso, rettifica, cancellazione, portabilità)
-   - Cookie policy (se web)
-   - Contatti DPO (se applicabile)
-
-3. **Terms & Conditions** (`docs/legal/terms_and_conditions.md`)
-   Generate terms of service (Italian) covering:
-   - Descrizione del servizio
-   - Account utente e responsabilità
-   - Proprietà intellettuale
-   - Limitazione di responsabilità
-   - Legge applicabile e foro competente (Italia)
-   - Clausole di recesso
-
-4. **In-App Compliance Implementation**
-   Ensure the app code includes:
-   - Consent screen at first launch (checkbox "Ho letto e accetto...")
-   - Link to Privacy Policy and T&C accessible from Settings
-   - "Elimina il mio account" option (GDPR Art. 17 — right to erasure)
-   - Open-source licenses screen (Settings → Licenze)
-
-5. **Write all docs** in `docs/legal/`
-6. **Update `.forge/00_forge_config.yaml`** → `current_phase: 6`
-7. **Present summary** and **ASK FOR FEEDBACK**: *"Ecco la documentazione legale generata. ATTENZIONE: questa è una bozza generata da AI e NON sostituisce una consulenza legale professionale. Ti consiglio di farla revisionare da un avvocato prima del rilascio. Vuoi procedere?"*
-8. **STOP — wait for approval**
-
-> ⚠️ **DISCLAIMER**: I documenti legali generati sono bozze basate su best practice e normativa vigente. NON costituiscono consulenza legale. Si raccomanda SEMPRE la revisione da parte di un professionista legale prima della pubblicazione.
+## WORKFLOW PHASES
+
+Il processo di sviluppo Flutter Forge è suddiviso in 6 fasi rigorose. I dettagli completi di ciascuna fase sono stati estratti nella cartella `phases/`.
+
+> **IMPORTANTE**: Leggi SEMPRE il file di fase pertinente PRIMA di iniziare a lavorarci.
+
+- [PHASE 1 — PRODUCT IDEATION & FEATURE ENHANCEMENT](phases/phase_1.md)
+- [PHASE 2 — UX & USER FLOWS](phases/phase_2.md)
+- [PHASE 3 — UI DESIGN SYSTEM & MOBILE PATTERNS](phases/phase_3.md)
+- [PHASE 4A — ARCHITECTURE PLANNING](phases/phase_4a.md)
+- [PHASE 4B — IMPLEMENTATION](phases/phase_4b.md)
+- [PHASE 5 — FLAVORS, DEVOPS & STORE READY](phases/phase_5.md)
+- [PHASE 6 — LEGAL, COMPLIANCE & DOCUMENTATION](phases/phase_6.md)
 
 ---
 
@@ -1421,20 +495,27 @@ For each milestone in `.forge/05_milestones.md` (o `task.md` nativo se supportat
 | Need to... | Read this reference | Use this template |
 |---|---|---|
 | Create feature folder structure | `references/architecture.md` | `templates/feature/` |
-| Write Riverpod providers | `references/state_management.md` | `templates/feature/provider.dart.tmpl` |
+| Write Riverpod providers | `references/state_management.md` | `templates/providers/async_notifier.dart.tmpl` |
 | Write BLoC/Cubit | `references/state_management.md` | `templates/feature/bloc.dart.tmpl` |
 | Setup GoRouter routes | `references/navigation.md` | `templates/project/app_router.dart.tmpl` |
 | Configure Dio networking | `references/networking.md` | `templates/project/dio_client.dart.tmpl` |
 | Design theme | `references/ui_design_system.md` | `templates/project/app_theme.dart.tmpl` |
 | Handle empty/error/loading states | `references/ux_patterns.md` | `templates/feature/widgets/` |
-| Write tests | `references/testing.md` | — |
+| Create list screen (all states) | `references/ux_patterns.md` | `templates/screens/list_screen.dart.tmpl` |
+| Create form screen (validation) | `references/ux_patterns.md` | `templates/screens/form_screen.dart.tmpl` |
+| Write widget tests | `references/testing.md` | `templates/test/widget_test.dart.tmpl` |
+| Write provider tests | `references/testing.md` | `templates/test/provider_test.dart.tmpl` |
+| Write repository tests | `references/testing.md` | `templates/test/repository_test.dart.tmpl` |
 | Optimize performance | `references/performance.md` | — |
 | Setup Drift database | `references/database.md` | — |
 | Configure flavors | `references/flavors_and_envs.md` | `templates/config/env_*.json.tmpl` |
 | Setup CI/CD | `references/cicd.md` | `templates/cicd/` |
-| Check naming/import rules | `references/conventions.md` | — |
+| Check naming/import rules | `references/conventions.md` + `rules/dart/coding-style.md` | — |
 | Check accessibility | `references/accessibility.md` | — |
-| Check security practices | `references/security.md` | — |
+| Check security practices | `references/security.md` + `rules/common/security.md` | — |
+| Check screen complexity | Rule R29 | — |
+| Handle permissions (mobile) | Rule R30 | `references/ui_design_system.md` (Permission Pre-Ask) |
+| Device-aware design | Rule R31 | `references/ui_design_system.md` (Responsive section) |
 | Legal compliance & GDPR | Rule R14 | `docs/legal/` |
 | Business plan & costs | Rule R15 | `.forge/09_business_plan.md` |
 | Scalability analysis | Rule R16 | `.forge/10_scalability.md` |

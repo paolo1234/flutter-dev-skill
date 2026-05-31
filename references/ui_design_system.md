@@ -294,8 +294,18 @@ class StaggeredListItem extends StatelessWidget {
 }
 ```
 
-## Responsive Design
+## Responsive & Device-Aware Design (R31)
 
+### Breakpoints
+| Category | Width | Examples |
+|----------|-------|---------|
+| Small phone | ≤ 360px | iPhone SE, Galaxy S21 |
+| Standard phone | 361-414px | iPhone 14, Pixel 7 |
+| Large phone | 415-480px | iPhone 15 Pro Max |
+| Tablet | 481-1024px | iPad, Galaxy Tab |
+| Desktop | > 1024px | Web, Windows, macOS |
+
+### Responsive Extension
 ```dart
 extension ResponsiveExtensions on BuildContext {
   bool get isMobile => MediaQuery.sizeOf(this).width < 600;
@@ -309,4 +319,184 @@ extension ResponsiveExtensions on BuildContext {
     horizontal: isMobile ? 16 : isTablet ? 32 : 64,
   );
 }
+```
+
+### Safe Area — ALWAYS Required
+```dart
+// ✅ Correct: SafeArea inside Scaffold body
+Scaffold(
+  body: SafeArea(
+    child: Column(...),
+  ),
+);
+
+// ✅ Also correct: using MediaQuery padding
+Padding(
+  padding: EdgeInsets.only(
+    top: MediaQuery.of(context).padding.top,
+    bottom: MediaQuery.of(context).padding.bottom,
+  ),
+  child: content,
+);
+
+// ❌ WRONG: Content under notch/status bar
+Scaffold(body: Column(...)); // No SafeArea!
+```
+
+### Text Overflow — NEVER Assume Single Line
+```dart
+// ✅ Title with ellipsis
+Text(
+  longTitle,
+  maxLines: 1,
+  overflow: TextOverflow.ellipsis,
+);
+
+// ✅ Flexible text in Row
+Row(
+  children: [
+    const Icon(Icons.star),
+    const SizedBox(width: 8),
+    Flexible( // NOT Expanded if you want natural sizing
+      child: Text(
+        veryLongText,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  ],
+);
+
+// ❌ WRONG: Fixed width for text
+SizedBox(width: 200, child: Text(dynamicText)); // Will overflow!
+```
+
+### Keyboard Handling for Forms
+```dart
+// ✅ Form that scrolls when keyboard appears
+Scaffold(
+  // DO NOT set resizeToAvoidBottomInset: false on form screens!
+  body: SafeArea(
+    child: GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(), // Dismiss on tap outside
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          child: Column(
+            children: [
+              TextFormField(
+                textInputAction: TextInputAction.next, // Go to next field
+              ),
+              TextFormField(
+                textInputAction: TextInputAction.done, // Submit on last field
+                onFieldSubmitted: (_) => _submit(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+```
+
+### Scroll Requirement
+Every screen whose content could exceed screen height MUST be scrollable:
+```dart
+// ✅ Detail screen with scroll
+SingleChildScrollView(
+  padding: const EdgeInsets.all(16),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Image, title, description, actions, etc.
+      // This WILL exceed small screens
+    ],
+  ),
+);
+
+// ❌ WRONG: Column without scroll for long content
+Column(
+  children: [/* many widgets */], // Overflow on small screens!
+);
+```
+
+### Font Scaling Support
+```dart
+// Test with large text: 1.5x scale
+MediaQuery(
+  data: MediaQuery.of(context).copyWith(
+    textScaler: const TextScaler.linear(1.5),
+  ),
+  child: yourWidget,
+);
+
+// Respect reduce motion preference
+final reduceMotion = MediaQuery.of(context).disableAnimations;
+AnimatedContainer(
+  duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 300),
+);
+```
+
+### Permission Pre-Ask Dialog Pattern (R30)
+```dart
+/// Show educational dialog BEFORE system permission request
+Future<bool> showPermissionPreAsk({
+  required BuildContext context,
+  required IconData icon,
+  required String title,
+  required String description,
+  required String benefit,
+  required String denyFallback,
+}) async {
+  final result = await showModalBottomSheet<bool>(
+    context: context,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Text(description, textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Text(
+            benefit,
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Consenti'),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Non ora — $denyFallback'),
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
+        ],
+      ),
+    ),
+  );
+  return result ?? false;
+}
+
+// Usage:
+// final agreed = await showPermissionPreAsk(
+//   context: context,
+//   icon: Icons.camera_alt,
+//   title: 'Accesso alla fotocamera',
+//   description: 'Per scattare una foto del tuo profilo',
+//   benefit: 'Potrai personalizzare il tuo avatar',
+//   denyFallback: 'userò un avatar predefinito',
+// );
+// if (agreed) {
+//   final status = await Permission.camera.request();
+//   // handle status...
+// }
+```
 ```

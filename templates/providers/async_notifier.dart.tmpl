@@ -1,0 +1,65 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part '__feature_name___notifier.g.dart';
+
+/// Template AsyncNotifier per operazioni CRUD con gestione errori.
+/// Personalizza: model type, repository, metodi.
+@riverpod
+class __FeatureName__Notifier extends _$__FeatureName__Notifier {
+  @override
+  FutureOr<List<__Model__>> build() async {
+    // Initial data load
+    final repository = ref.watch(__repositoryProvider__);
+    return repository.getAll();
+  }
+
+  /// Create a new item
+  Future<void> create({
+    required String field1,
+    String? field2,
+  }) async {
+    // Set loading state while preserving previous data
+    state = const AsyncValue.loading().copyWithPrevious(state);
+
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(__repositoryProvider__);
+      await repository.create(
+        field1: field1,
+        field2: field2,
+      );
+      // Refresh the list
+      return repository.getAll();
+    });
+  }
+
+  /// Update an existing item
+  Future<void> update({
+    required String id,
+    required String field1,
+    String? field2,
+  }) async {
+    state = const AsyncValue.loading().copyWithPrevious(state);
+
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(__repositoryProvider__);
+      await repository.update(
+        id: id,
+        field1: field1,
+        field2: field2,
+      );
+      return repository.getAll();
+    });
+  }
+
+  /// Delete an item
+  Future<void> delete(String id) async {
+    state = const AsyncValue.loading().copyWithPrevious(state);
+
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(__repositoryProvider__);
+      await repository.delete(id);
+      return repository.getAll();
+    });
+  }
+}

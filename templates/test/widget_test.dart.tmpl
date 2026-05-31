@@ -1,0 +1,105 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mocktail/mocktail.dart';
+
+// import 'package:__app__/features/__feature__/presentation/pages/__page__.dart';
+// import 'package:__app__/features/__feature__/presentation/providers/__provider__.dart';
+
+/// Template per widget test con Riverpod ProviderScope e override.
+/// Personalizza: import, provider, widget, assertions.
+
+// --- MOCKS ---
+// class MockRepository extends Mock implements __Repository__ {}
+
+void main() {
+  // late MockRepository mockRepository;
+
+  setUp(() {
+    // mockRepository = MockRepository();
+  });
+
+  /// Helper per wrappare il widget con MaterialApp + ProviderScope
+  Widget createTestWidget({
+    List<Override> overrides = const [],
+  }) {
+    return ProviderScope(
+      overrides: overrides,
+      child: const MaterialApp(
+        home: Scaffold(
+          body: Text('Replace with your widget'), // __WIDGET__(),
+        ),
+      ),
+    );
+  }
+
+  group('__WidgetName__', () {
+    testWidgets('shows loading state initially', (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        overrides: [
+          // __provider__.overrideWith((ref) => __MockNotifier__()),
+        ],
+      ));
+
+      // Verify skeleton/loading is shown
+      // expect(find.byType(__SkeletonWidget__), findsOneWidget);
+    });
+
+    testWidgets('shows data when loaded', (tester) async {
+      // Arrange: provide mock data
+      // when(() => mockRepository.getAll()).thenAnswer((_) async => [testItem]);
+
+      await tester.pumpWidget(createTestWidget(
+        overrides: [
+          // __provider__.overrideWith((ref) => __NotifierWithData__()),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      // Assert: data is displayed
+      // expect(find.text('Test Item Title'), findsOneWidget);
+    });
+
+    testWidgets('shows empty state when no data', (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        overrides: [
+          // __provider__.overrideWith((ref) => __NotifierWithEmptyData__()),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      // Assert: empty state is shown
+      // expect(find.text('Nessun elemento'), findsOneWidget);
+      // expect(find.byType(FilledButton), findsOneWidget); // CTA button
+    });
+
+    testWidgets('shows error state with retry', (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        overrides: [
+          // __provider__.overrideWith((ref) => __NotifierWithError__()),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      // Assert: error message and retry button shown
+      // expect(find.text('Si è verificato un errore'), findsOneWidget);
+      // expect(find.text('Riprova'), findsOneWidget);
+    });
+
+    testWidgets('navigates to detail on item tap', (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        overrides: [
+          // __provider__.overrideWith((ref) => __NotifierWithData__()),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      // Act: tap on an item
+      // await tester.tap(find.text('Test Item Title'));
+      // await tester.pumpAndSettle();
+
+      // Assert: navigation happened
+      // Verify with a mock navigator or GoRouter testHarness
+    });
+  });
+}

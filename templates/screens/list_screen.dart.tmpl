@@ -1,0 +1,248 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:shimmer/shimmer.dart'; // Uncomment and adapt
+
+/// Template per schermata lista con tutti gli stati gestiti.
+/// Personalizza: provider, modello, skeleton, empty state, item widget.
+///
+/// Complessità R29: ~10 punti (lista 3 + pull-to-refresh incluso + app bar)
+class __FEATURE_NAME__ListPage extends ConsumerWidget {
+  const __FEATURE_NAME__ListPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncItems = ref.watch(__itemsProvider__);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('__TITLE__'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Cerca',
+            onPressed: () {
+              // TODO: Navigate to search or show search delegate
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: asyncItems.when(
+          loading: () => const __FEATURE_NAME__ListSkeleton(),
+          error: (error, _) => _ErrorState(
+            message: _mapErrorMessage(error),
+            onRetry: () => ref.invalidate(__itemsProvider__),
+          ),
+          data: (items) {
+            if (items.isEmpty) {
+              return const _EmptyState();
+            }
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(__itemsProvider__);
+                await ref.read(__itemsProvider__.future);
+              },
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return _ItemTile(
+                    item: item,
+                    onTap: () {
+                      // context.push('/detail/${item.id}');
+                    },
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // context.push('/create');
+        },
+        tooltip: 'Aggiungi',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  String _mapErrorMessage(Object error) {
+    // Map AppException types to user-friendly messages
+    return 'Si è verificato un errore. Riprova.';
+  }
+}
+
+// --- SKELETON LOADER ---
+
+class __FEATURE_NAME__ListSkeleton extends StatelessWidget {
+  const __FEATURE_NAME__ListSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: 6,
+      itemBuilder: (_, __) => const _SkeletonItem(),
+    );
+  }
+}
+
+class _SkeletonItem extends StatelessWidget {
+  const _SkeletonItem();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          // Avatar placeholder
+          Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity * 0.6, height: 14,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity * 0.4, height: 12,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- EMPTY STATE ---
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined, size: 64, color: theme.colorScheme.outline),
+            const SizedBox(height: 16),
+            Text(
+              'Nessun elemento',
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Aggiungi il tuo primo elemento per iniziare.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () {
+                // context.push('/create');
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Crea il primo'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- ERROR STATE ---
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, this.onRetry});
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+            const SizedBox(height: 16),
+            Text(message, style: theme.textTheme.bodyLarge, textAlign: TextAlign.center),
+            if (onRetry != null) ...[
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Riprova'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- ITEM TILE ---
+
+class _ItemTile extends StatelessWidget {
+  const _ItemTile({required this.item, this.onTap});
+  final dynamic item; // Replace with your model type
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.primaryContainer,
+        child: Icon(Icons.article, color: theme.colorScheme.onPrimaryContainer),
+      ),
+      title: Text(
+        '__ITEM_TITLE__', // item.title
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        '__ITEM_SUBTITLE__', // item.description
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+}
