@@ -303,6 +303,35 @@ Dopo che TUTTE le milestone e task sono state completate (non prima), il sistema
 
 5. **Presenta il piano all'utente** e chiedi: *"Ho completato tutte le milestone. Ho analizzato l'app e trovato [N] aree di miglioramento. Vuoi che inizi a lavorare sul piano di miglioramento o preferisci rilasciare prima la versione corrente?"*
 
+### R23 — Strategic Context Clearing & Token Optimization
+Il contesto dell'LLM non è infinito. Su task prolungati, mantieni la chat pulita.
+- **Session Checkpoints**: Prima di iniziare una nuova Milestone o alla fine di un lungo task esplorativo, scrivi in `.forge/14_current_session.md` un riassunto di cosa ha funzionato, cosa ha fallito e i prossimi step.
+- Dopodiché, chiedi all'utente di eseguire il comando `/clear` o di aprire una nuova conversazione partendo esclusivamente da quel file e da `.forge/05_milestones.md`.
+
+### R24 — Instincts & Continuous Learning
+Se l'agente risolve un problema complesso, aggira un limite del framework o corregge un pattern errato per la seconda volta, **non perdere questa informazione**.
+- Registra immediatamente il pattern in `.forge/13_instincts.md` (Es. "Se usi la libreria X, ricordati sempre di inizializzare Y altrimenti va in crash").
+- Leggi sempre questo file all'inizio di una sessione.
+
+### R25 — Search-First Workflow (Zero Reinventing the Wheel)
+Prima di implementare una qualsiasi funzionalità (es. "aggiungi client HTTP con retry", "parsing date"), **DEVI** cercare librerie esistenti su `pub.dev` o server MCP attivi, oppure leggere le Knowledge Items (KIs).
+- Non scrivere MAI boilerplate custom se esiste una libreria standard manutenuta che lo fa.
+- Ricerca prima, valuta, poi adotta o estendi.
+
+### R26 — Agent-Aware Artifacts & Background Tasks
+Questo framework supporta pienamente gli IDE agentici moderni come **Antigravity** o **OpenCode**.
+- **Artifacts Nativi**: Se sai di essere su Antigravity/OpenCode, invece di salvare i piani SOLO su file nascosti in `.forge/`, usa il sistema nativo di Artifacts (`implementation_plan.md`, `task.md`, `walkthrough.md`) per presentare l'output all'utente nell'interfaccia. Mantieni comunque allineati i file `.forge/` per retrocompatibilità.
+- **Background Tasks**: Se devi eseguire `flutter test` o `flutter build`, avviali in background usando i tool appropriati (es. `manage_task` su Antigravity) per non bloccare l'esecuzione.
+
+### R27 — TDD Micro-Commits & De-sloppify Pass
+- **Micro-Commit Atomici**: In fase di implementazione (Phase 4B), non fare commit giganti. Committa *solo* secondo il ciclo TDD: "Red" (test fallito), "Green" (test passa), "Refactor" (codice pulito).
+- **De-sloppify Pass**: Dopo aver implementato una feature, esegui sempre un passaggio concettuale di pulizia: rimuovi i `print()`, i test sintattici superflui e le difese eccessive su stati impossibili.
+
+### R28 — Cost-Aware & Context Budgeting
+Applica la *Denial of Wallet protection* al tuo stesso workflow:
+- Stima sempre se un'azione sta richiedendo troppi cicli o troppi tentativi (es. test fallisce 3 volte di fila). Se succede, **fermati** e chiedi un feedback o proponi di fare un fork in un branch/chat separata.
+- Scegli la strategia giusta per non sprecare token dell'utente su task che palesemente necessitano di un reset del contesto.
+
 ---
 
 ## .forge/ STATE FILES FORMAT
@@ -827,6 +856,25 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 | [e.g., Inter] | 400, 500, 600, 700 | Google Fonts | OFL |
 ```
 
+### `13_instincts.md` (Continuous Learning)
+```markdown
+# Instincts & Learned Patterns
+
+## Pattern 1: [Nome breve]
+- **Trigger**: Quando si usa/si fa [X]
+- **Errore Comune**: [Cosa andava storto]
+- **Soluzione**: [Come fare correttamente]
+```
+
+### `14_current_session.md` (Session Checkpoint)
+```markdown
+# Session Checkpoint
+- **Fase/Milestone Corrente**: [Fase X, Milestone Y]
+- **Cosa funziona**: [Fattualità confermata]
+- **Cosa non ha funzionato**: [Approcci falliti da non ripetere]
+- **Prossimi step immediati**: [Da dove riprendere]
+```
+
 ---
 
 ## PHASE 1 — PRODUCT IDEATION & FEATURE ENHANCEMENT
@@ -854,6 +902,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
    - Onboarding per nuovi utenti
    - Impostazioni e personalizzazione
    - Feature social (se pertinente)
+   - **(Novità)** Consiglia all'utente di digitare il comando nativo `/grill-me` se preferisce farsi intervistare da te in modo interattivo per far emergere i requisiti senza doverli scrivere tutti in una volta.
 
 4. **Define MVP** — Separate clearly:
    - **P0 (Must Have)**: Il minimo per un'app PROFESSIONALE (non un prototipo)
@@ -1135,19 +1184,22 @@ Go beyond basic requirements. Ask about:
 - Read relevant `references/` files as needed during implementation
 - Use `templates/` as starting points for new files
 
-### Milestone Execution Loop
+### Milestone Execution Loop (Continuous PR / Goal Loop)
 
-For each milestone in `.forge/05_milestones.md`:
+**Tip for users**: Suggerisci all'utente di usare il comando `/goal` di Antigravity se vuole che tu esegua questa intera milestone in totale autonomia, lasciandoti lavorare in background per completare tutti i task di fila.
+
+For each milestone in `.forge/05_milestones.md` (o `task.md` nativo se supportato):
 
 1. **Announce**: "Inizio Milestone MX — [Nome]"
-2. **Mark milestone as in progress** in `05_milestones.md` (`[/]`)
+2. **Mark milestone as in progress** in `05_milestones.md` (o `task.md`) (`[/]`)
 3. **For each task in the milestone**:
-   a. Mark task as in progress (`[/]`)
-   b. Create/modify the necessary files — COMPLETE code, no placeholders
-   c. Follow coding conventions from `references/conventions.md`
-   d. Follow architecture from `references/architecture.md`
-   e. Mark task as completed (`[x]`)
-   f. Update `07_changelog.md`
+   a. **Preflight Search (R25)**: Prima di scrivere logica core, effettua una ricerca (search-first) per evitare codice custom se esiste una libreria.
+   b. Mark task as in progress (`[/]`)
+   c. **TDD Micro-Commits (R27)**: Crea/modifica i file applicando il ciclo TDD (Red, Green, Refactor). Effettua un micro-commit per ogni step funzionale. Usa i *Background Tasks* (`manage_task`) per eseguire `flutter test` mentre continui a preparare il commit successivo.
+   d. Follow coding conventions and architecture.
+   e. **De-sloppify Pass (R27)**: Pulisci il codice da boilerplate e test ridondanti.
+   f. Mark task as completed (`[x]`)
+   g. Update `07_changelog.md`
 4. **After completing all tasks**:
    - Run `flutter analyze` — fix any issues
    - Run `flutter test` — fix any failures
@@ -1250,10 +1302,11 @@ For each milestone in `.forge/05_milestones.md`:
    - Write all copy in Italian + English (if multi-language)
    - Save in `docs/store/aso_listing.md`
 
-7. **Release Checklist & Security Audit**:
+7. **Release Checklist, Red-Team Audit & Automation**:
+   - Consiglia all'utente l'uso dello slash command `/schedule` se vuole impostare build e test end-to-end ricorrenti (es. ogni notte).
    - Write `.forge/08_release_checklist.md`
    - Run through checklist items (Test, Coverage > 80%, Performance).
-   - **Security Audit**: Verify no API keys are hardcoded. Ensure obfuscation is enabled (`--obfuscate --split-debug-info`). Check SSL and Secure Storage implementations.
+   - **Adversarial Security Audit (Red-Team)**: Simula di essere un attaccante (stile AgentShield). Cerca attivamente injection attack, analizza se le regole RLS di Supabase sono bypassabili, assicurati che i permessi siano al minimo. Non limitarti a una checklist statica: scrivi veri e propri tentativi di breach nei test se necessario. Verify no API keys are hardcoded. Ensure obfuscation is enabled.
    - Generate release build for testing (`flutter build apk/ipa --release`).
 
 8. **Update state files** and **present summary**
