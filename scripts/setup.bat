@@ -21,6 +21,33 @@ if %errorlevel% neq 0 (
     echo [OK] Git e' gia' installato.
 )
 
+:: Check Java 17
+where java >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [X] Java non trovato. Installazione di OpenJDK 17 in corso tramite winget...
+    winget install Microsoft.OpenJDK.17 -e --source winget
+    if %errorlevel% neq 0 (
+        echo [ERROR] Installazione di Java fallita. Installa manualmente Java 17.
+    ) else (
+        echo [OK] Java 17 installato con successo.
+    )
+) else (
+    echo [OK] Java trovato.
+)
+
+:: Check Android SDK/Studio
+if not exist "%LOCALAPPDATA%\Android\Sdk" (
+    if "%ANDROID_HOME%"=="" (
+        echo [X] Android SDK non trovato.
+        echo Per sviluppare app Android, e' necessario installare Android Studio.
+        echo Puoi scaricarlo da: https://developer.android.com/studio
+    ) else (
+        echo [OK] Android SDK trovato in ANDROID_HOME.
+    )
+) else (
+    echo [OK] Android SDK trovato.
+)
+
 :: Check Flutter
 where flutter >nul 2>nul
 if %errorlevel% neq 0 (
